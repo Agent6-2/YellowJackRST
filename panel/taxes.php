@@ -188,21 +188,25 @@ if ($_POST && isset($_POST['finalize_week'])) {
             throw new Exception("Aucune semaine sélectionnée. Veuillez créer ou sélectionner une semaine.");
         }
         
+        // Enregistrer l'heure exacte de finalisation
+        $finalization_time = date('Y-m-d H:i:s');
+        
         // Finaliser la semaine actuelle
         $stmt = $db->prepare("
             UPDATE weekly_taxes 
-            SET is_finalized = TRUE, finalized_at = CURRENT_TIMESTAMP 
+            SET is_finalized = TRUE, finalized_at = ? 
             WHERE week_start = ?
         ");
-        $stmt->execute([$week_start]);
+        $stmt->execute([$finalization_time, $week_start]);
         
-        // Créer automatiquement la nouvelle semaine
-        $new_start = $week_end; // La nouvelle semaine commence le même jour que la fin de la précédente
-        $new_end = date('Y-m-d', strtotime($new_start . ' +6 days'));
+        // Créer automatiquement la nouvelle semaine avec quelques secondes de décalage
+        $new_start_timestamp = strtotime($week_end . ' 00:00:05'); // Ajouter 5 secondes pour éviter les conflits
+        $new_start = date('Y-m-d H:i:s', $new_start_timestamp);
+        $new_end = date('Y-m-d', strtotime($week_end . ' +6 days'));
         
-        // Vérifier si la nouvelle période n'existe pas déjà
-        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
-        $checkStmt->execute([$new_start]);
+        // Vérifier si la nouvelle période n'existe pas déjà (comparer seulement la date)
+        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE DATE(week_start) = ?");
+        $checkStmt->execute([date('Y-m-d', $new_start_timestamp)]);
         $existingWeek = $checkStmt->fetch();
         
         if (!$existingWeek) {
@@ -213,7 +217,7 @@ if ($_POST && isset($_POST['finalize_week'])) {
             $createStmt->execute([$new_start, $new_end]);
         }
         
-        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès. Nouvelle semaine créée du " . date('d/m/Y', strtotime($new_start)) . " au " . date('d/m/Y', strtotime($new_end)) . ".";
+        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès à " . date('H:i:s', strtotime($finalization_time)) . ". Nouvelle semaine créée du " . date('d/m/Y H:i:s', strtotime($new_start)) . " au " . date('d/m/Y', strtotime($new_end)) . ".";
         
         // Rediriger vers la nouvelle semaine
         header("Location: taxes.php?week=" . urlencode($new_start) . "&success=1");
@@ -239,9 +243,10 @@ if ($_POST && isset($_POST['create_new_week'])) {
             throw new Exception("La date de début doit être antérieure à la date de fin.");
         }
         
-        // Vérifier si la période n'existe pas déjà
-        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
-        $checkStmt->execute([$new_start]);
+        // Vérifier si la nouvelle période n'existe pas déjà (comparer seulement la date)
+        $new_start_date = date('Y-m-d', $new_start_timestamp);
+        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE DATE(week_start) = ?");
+        $checkStmt->execute([$new_start_date]);
         $existingWeek = $checkStmt->fetch();
         
         if ($existingWeek) {
