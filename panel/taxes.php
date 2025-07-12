@@ -197,7 +197,7 @@ if ($_POST && isset($_POST['finalize_week'])) {
         $stmt->execute([$week_start]);
         
         // Créer automatiquement la nouvelle semaine
-        $new_start = date('Y-m-d', strtotime($week_end . ' +1 day'));
+        $new_start = $week_end; // La nouvelle semaine commence à la même date que la fin de la précédente
         $new_end = date('Y-m-d', strtotime($new_start . ' +6 days'));
         
         // Vérifier si la nouvelle période n'existe pas déjà
