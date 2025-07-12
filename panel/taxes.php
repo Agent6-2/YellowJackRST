@@ -175,7 +175,7 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
     }
 }
 
-// Action de finalisation (sans création automatique de nouvelle semaine)
+// Action de finalisation avec création automatique de nouvelle semaine
 if ($_POST && isset($_POST['finalize_week'])) {
     try {
         // Finaliser la semaine actuelle
@@ -186,10 +186,27 @@ if ($_POST && isset($_POST['finalize_week'])) {
         ");
         $stmt->execute([$week_start]);
         
-        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès.";
+        // Créer automatiquement la nouvelle semaine
+        $new_start = date('Y-m-d', strtotime($week_end . ' +1 day'));
+        $new_end = date('Y-m-d', strtotime($new_start . ' +6 days'));
         
-        // Redirection pour actualiser les données
-        header("Location: taxes.php?week=" . urlencode($week_start) . "&success=1");
+        // Vérifier si la nouvelle période n'existe pas déjà
+        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
+        $checkStmt->execute([$new_start]);
+        $existingWeek = $checkStmt->fetch();
+        
+        if (!$existingWeek) {
+            $createStmt = $db->prepare("
+                INSERT INTO weekly_taxes (week_start, week_end, total_revenue, tax_amount, effective_tax_rate, tax_breakdown, is_finalized) 
+                VALUES (?, ?, 0, 0, 0, '[]', FALSE)
+            ");
+            $createStmt->execute([$new_start, $new_end]);
+        }
+        
+        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès. Nouvelle semaine créée du " . date('d/m/Y', strtotime($new_start)) . " au " . date('d/m/Y', strtotime($new_end)) . ".";
+        
+        // Rediriger vers la nouvelle semaine
+        header("Location: taxes.php?week=" . urlencode($new_start) . "&success=1");
         exit();
         
     } catch (Exception $e) {
@@ -748,12 +765,12 @@ try {
                                         
                                         <?php if ($current_week_data && !$current_week_data['is_finalized']): ?>
                                             <form method="POST" class="d-inline">
-                                                <button type="submit" name="finalize_week" class="btn btn-warning mb-2" 
-                                                        onclick="return confirm('Êtes-vous sûr de vouloir finaliser cette semaine ? Cette action est irréversible et aucune nouvelle semaine ne sera créée automatiquement.')">
-                                                    <i class="fas fa-lock me-2"></i>
-                                                    Finaliser la semaine
-                                                </button>
-                                            </form>
+                                                 <button type="submit" name="finalize_week" class="btn btn-warning mb-2" 
+                                                         onclick="return confirm('Êtes-vous sûr de vouloir finaliser cette semaine ? Cette action est irréversible et créera automatiquement la semaine suivante.')">
+                                                     <i class="fas fa-lock me-2"></i>
+                                                     Finaliser la semaine
+                                                 </button>
+                                             </form>
                                         <?php endif; ?>
                                         
                                         <?php if ($current_week_data && $current_week_data['is_finalized']): ?>
