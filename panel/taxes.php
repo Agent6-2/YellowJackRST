@@ -218,7 +218,7 @@ if ($_POST && isset($_POST['finalize_week'])) {
             $createStmt->execute([$new_start, $new_end]);
         }
         
-        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès à " . date('H:i:s', strtotime($finalization_time)) . ". Nouvelle semaine créée du " . date('d/m/Y H:i', strtotime($new_start)) . " au " . date('d/m/Y H:i', strtotime($new_end)) . " (décalage d'1h pour éviter les conflits).";}]}}}
+        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès à " . date('H:i:s', strtotime($finalization_time)) . ". Nouvelle semaine créée du " . date('d/m/Y H:i', strtotime($new_start)) . " au " . date('d/m/Y H:i', strtotime($new_end)) . " (décalage d'1h pour éviter les conflits).";
         
         // Rediriger vers la nouvelle semaine
         header("Location: taxes.php?week=" . urlencode($new_start) . "&success=1");
