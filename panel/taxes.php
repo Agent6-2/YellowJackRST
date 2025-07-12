@@ -202,7 +202,8 @@ if ($_POST && isset($_POST['finalize_week'])) {
         // Créer automatiquement la nouvelle semaine avec quelques secondes de décalage
         $new_start_timestamp = strtotime($week_end . ' 00:00:05'); // Ajouter 5 secondes pour éviter les conflits
         $new_start = date('Y-m-d H:i:s', $new_start_timestamp);
-        $new_end = date('Y-m-d', strtotime($week_end . ' +6 days'));
+        $new_end_timestamp = strtotime($week_end . ' +6 days 23:59:59'); // Fin de semaine avec timestamp
+        $new_end = date('Y-m-d H:i:s', $new_end_timestamp);
         
         // Vérifier si la nouvelle période n'existe pas déjà (comparer seulement la date)
         $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE DATE(week_start) = ?");
@@ -243,10 +244,9 @@ if ($_POST && isset($_POST['create_new_week'])) {
             throw new Exception("La date de début doit être antérieure à la date de fin.");
         }
         
-        // Vérifier si la nouvelle période n'existe pas déjà (comparer seulement la date)
-        $new_start_date = date('Y-m-d', $new_start_timestamp);
-        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE DATE(week_start) = ?");
-        $checkStmt->execute([$new_start_date]);
+        // Vérifier si la période n'existe pas déjà
+        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
+        $checkStmt->execute([$new_start]);
         $existingWeek = $checkStmt->fetch();
         
         if ($existingWeek) {
