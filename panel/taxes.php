@@ -188,16 +188,19 @@ if ($_POST && isset($_POST['finalize_week'])) {
             throw new Exception("Aucune semaine sélectionnée. Veuillez créer ou sélectionner une semaine.");
         }
         
-        // Finaliser la semaine actuelle
+        // Finaliser la semaine actuelle avec l'heure précise
+        $finalization_time = date('Y-m-d H:i:s');
         $stmt = $db->prepare("
             UPDATE weekly_taxes 
-            SET is_finalized = TRUE, finalized_at = CURRENT_TIMESTAMP 
+            SET is_finalized = TRUE, finalized_at = ? 
             WHERE week_start = ?
         ");
-        $stmt->execute([$week_start]);
+        $stmt->execute([$finalization_time, $week_start]);
         
-        // Créer automatiquement la nouvelle semaine
-        $new_start = $week_end; // La nouvelle semaine commence le même jour que la fin de la précédente
+        // Créer automatiquement la nouvelle semaine avec quelques secondes de décalage
+        $new_start_datetime = new DateTime($week_end . ' ' . date('H:i:s'));
+        $new_start_datetime->add(new DateInterval('PT5S')); // Ajouter 5 secondes
+        $new_start = $new_start_datetime->format('Y-m-d');
         $new_end = date('Y-m-d', strtotime($new_start . ' +6 days'));
         
         // Vérifier si la nouvelle période n'existe pas déjà
