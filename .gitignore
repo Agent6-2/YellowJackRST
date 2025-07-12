@@ -1,0 +1,87 @@
+# Configuration files with sensitive data
+config/database.php
+
+# Log files
+*.log
+logs/
+
+# Cache files
+cache/
+tmp/
+temp/
+
+# Session files
+sessions/
+
+# Uploaded files
+uploads/
+
+# Backup files
+*.bak
+*.backup
+*.sql.gz
+*.sql.zip
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Dependency directories
+node_modules/
+vendor/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Composer files
+composer.phar
+composer.lock
+
+# NPM files
+package-lock.json
+yarn.lock
+
+# Build files
+build/
+dist/
+
+# Error logs
+error.log
+access.log
+
+# PHP specific
+*.php~
+*.phps
+
+# System files
+.htaccess.bak
+robots.txt.bak
+
+# Temporary files
+*.tmp
+*.temp
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Documentation build
+docs/_build/
+
+# Test files
+tests/coverage/
+phpunit.xml
+
+# Local configuration overrides
+config/local.php
+config/development.php
+config/production.php
