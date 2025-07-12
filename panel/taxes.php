@@ -116,6 +116,11 @@ if (isset($_GET['success']) && $_GET['success'] == '1') {
 // Action de calcul/recalcul des impôts
 if ($_POST && isset($_POST['calculate_taxes'])) {
     try {
+        // Vérifier qu'une semaine est sélectionnée
+        if ($week_start === null || $week_end === null) {
+            throw new Exception("Aucune semaine sélectionnée. Veuillez créer ou sélectionner une semaine.");
+        }
+        
         // Calculer le CA total de la semaine (vendredi à vendredi inclus)
         // CA = Ventes + Salaire ménage
         $stmt = $db->prepare("
@@ -178,6 +183,11 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
 // Action de finalisation avec création automatique de nouvelle semaine
 if ($_POST && isset($_POST['finalize_week'])) {
     try {
+        // Vérifier qu'une semaine est sélectionnée
+        if ($week_start === null || $week_end === null) {
+            throw new Exception("Aucune semaine sélectionnée. Veuillez créer ou sélectionner une semaine.");
+        }
+        
         // Finaliser la semaine actuelle
         $stmt = $db->prepare("
             UPDATE weekly_taxes 
@@ -258,12 +268,14 @@ if ($_POST && isset($_POST['create_new_week'])) {
 
 // Récupérer les données de la semaine sélectionnée
 $current_week_data = null;
-try {
-    $stmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
-    $stmt->execute([$week_start]);
-    $current_week_data = $stmt->fetch();
-} catch (Exception $e) {
-    $error_message = "Erreur lors de la récupération des données : " . $e->getMessage();
+if ($week_start !== null) {
+    try {
+        $stmt = $db->prepare("SELECT * FROM weekly_taxes WHERE week_start = ?");
+        $stmt->execute([$week_start]);
+        $current_week_data = $stmt->fetch();
+    } catch (Exception $e) {
+        $error_message = "Erreur lors de la récupération des données : " . $e->getMessage();
+    }
 }
 
 // Récupérer l'historique des semaines
@@ -303,20 +315,22 @@ $no_weeks_available = empty($available_weeks) && !$activeWeek;
 // Récupérer le CA de la semaine courante (vendredi à vendredi inclus)
 // CA = Ventes + Salaire ménage
 $current_revenue = 0;
-try {
-    // Calculer les ventes
-    $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?");
-    $stmt_sales->execute([$week_start, $week_end]);
-    $sales_result = $stmt_sales->fetch();
-    
-    // Calculer le salaire ménage
-    $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE DATE(start_time) >= ? AND DATE(start_time) <= ? AND status = 'completed'");
-    $stmt_cleaning->execute([$week_start, $week_end]);
-    $cleaning_result = $stmt_cleaning->fetch();
-    
-    $current_revenue = $sales_result['sales_revenue'] + $cleaning_result['cleaning_revenue'];
-} catch (Exception $e) {
-    // Revenue à 0 en cas d'erreur
+if ($week_start !== null && $week_end !== null) {
+    try {
+        // Calculer les ventes
+        $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?");
+        $stmt_sales->execute([$week_start, $week_end]);
+        $sales_result = $stmt_sales->fetch();
+        
+        // Calculer le salaire ménage
+        $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE DATE(start_time) >= ? AND DATE(start_time) <= ? AND status = 'completed'");
+        $stmt_cleaning->execute([$week_start, $week_end]);
+        $cleaning_result = $stmt_cleaning->fetch();
+        
+        $current_revenue = $sales_result['sales_revenue'] + $cleaning_result['cleaning_revenue'];
+    } catch (Exception $e) {
+        // Revenue à 0 en cas d'erreur
+    }
 }
 
 ?>
