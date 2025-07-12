@@ -199,10 +199,10 @@ if ($_POST && isset($_POST['finalize_week'])) {
         ");
         $stmt->execute([$finalization_time, $week_start]);
         
-        // Créer automatiquement la nouvelle semaine avec quelques secondes de décalage
-        $new_start_timestamp = strtotime($week_end . ' 00:00:05'); // Ajouter 5 secondes pour éviter les conflits
+        // Créer automatiquement la nouvelle semaine avec 1h de décalage pour éviter les conflits
+        $new_start_timestamp = strtotime($week_end . ' +1 hour'); // Commencer 1h après la fin de la semaine précédente
         $new_start = date('Y-m-d H:i:s', $new_start_timestamp);
-        $new_end_timestamp = strtotime($week_end . ' +6 days 23:59:59'); // Fin de semaine avec timestamp
+        $new_end_timestamp = strtotime($week_end . ' +6 days +1 hour'); // Fin de semaine avec décalage d'1h
         $new_end = date('Y-m-d H:i:s', $new_end_timestamp);
         
         // Vérifier si la nouvelle période n'existe pas déjà (comparer seulement la date)
@@ -218,7 +218,7 @@ if ($_POST && isset($_POST['finalize_week'])) {
             $createStmt->execute([$new_start, $new_end]);
         }
         
-        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès à " . date('H:i:s', strtotime($finalization_time)) . ". Nouvelle semaine créée du " . date('d/m/Y H:i:s', strtotime($new_start)) . " au " . date('d/m/Y', strtotime($new_end)) . ".";
+        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès à " . date('H:i:s', strtotime($finalization_time)) . ". Nouvelle semaine créée du " . date('d/m/Y H:i', strtotime($new_start)) . " au " . date('d/m/Y H:i', strtotime($new_end)) . " (décalage d'1h pour éviter les conflits).";}]}}}
         
         // Rediriger vers la nouvelle semaine
         header("Location: taxes.php?week=" . urlencode($new_start) . "&success=1");
@@ -323,13 +323,13 @@ $current_revenue = 0;
 if ($week_start !== null && $week_end !== null) {
     try {
         // Calculer les ventes (avec timestamps précis)
-        $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE created_at >= ? AND created_at < ?");
+        $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE created_at >= ? AND created_at <= ?");
         $week_end_timestamp = date('Y-m-d H:i:s', strtotime($week_end . ' 23:59:59'));
         $stmt_sales->execute([$week_start, $week_end_timestamp]);
         $sales_result = $stmt_sales->fetch();
         
         // Calculer le salaire ménage (avec timestamps précis)
-        $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE start_time >= ? AND start_time < ? AND status = 'completed'");
+        $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE start_time >= ? AND start_time <= ? AND status = 'completed'");
         $stmt_cleaning->execute([$week_start, $week_end_timestamp]);
         $cleaning_result = $stmt_cleaning->fetch();
         
