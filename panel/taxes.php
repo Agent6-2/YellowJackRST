@@ -322,14 +322,15 @@ $no_weeks_available = empty($available_weeks) && !$activeWeek;
 $current_revenue = 0;
 if ($week_start !== null && $week_end !== null) {
     try {
-        // Calculer les ventes
-        $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?");
-        $stmt_sales->execute([$week_start, $week_end]);
+        // Calculer les ventes (avec timestamps précis)
+        $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE created_at >= ? AND created_at < ?");
+        $week_end_timestamp = date('Y-m-d H:i:s', strtotime($week_end . ' 23:59:59'));
+        $stmt_sales->execute([$week_start, $week_end_timestamp]);
         $sales_result = $stmt_sales->fetch();
         
-        // Calculer le salaire ménage
-        $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE DATE(start_time) >= ? AND DATE(start_time) <= ? AND status = 'completed'");
-        $stmt_cleaning->execute([$week_start, $week_end]);
+        // Calculer le salaire ménage (avec timestamps précis)
+        $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE start_time >= ? AND start_time < ? AND status = 'completed'");
+        $stmt_cleaning->execute([$week_start, $week_end_timestamp]);
         $cleaning_result = $stmt_cleaning->fetch();
         
         $current_revenue = $sales_result['sales_revenue'] + $cleaning_result['cleaning_revenue'];
