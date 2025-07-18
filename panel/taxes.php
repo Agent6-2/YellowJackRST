@@ -180,7 +180,7 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
     }
 }
 
-// Action de finalisation avec création automatique de nouvelle semaine
+// Action de finalisation avec délai d'attente d'une heure
 if ($_POST && isset($_POST['finalize_week'])) {
     try {
         // Vérifier qu'une semaine est sélectionnée
@@ -188,16 +188,18 @@ if ($_POST && isset($_POST['finalize_week'])) {
             throw new Exception("Aucune semaine sélectionnée. Veuillez créer ou sélectionner une semaine.");
         }
         
+        // Vérifier si la semaine n'est pas déjà finalisée
+        $checkStmt = $db->prepare("SELECT is_finalized FROM weekly_taxes WHERE week_start = ?");
+        $checkStmt->execute([$week_start]);
+        $weekData = $checkStmt->fetch();
+        
+        if ($weekData && $weekData['is_finalized']) {
+            throw new Exception("Cette semaine est déjà finalisée.");
+        }
+        
         // Enregistrer l'heure exacte de finalisation
         $finalization_time = date('Y-m-d H:i:s');
-        
-        // Finaliser la semaine actuelle
-        $stmt = $db->prepare("
-            UPDATE weekly_taxes 
-            SET is_finalized = TRUE, finalized_at = ? 
-            WHERE week_start = ?
-        ");
-        $stmt->execute([$finalization_time, $week_start]);
+        $execution_time = date('Y-m-d H:i:s', strtotime('+1 hour')); // Exécution dans 1 heure
         
         // Créer automatiquement la nouvelle semaine avec 1h de décalage pour éviter les conflits
         $new_start_timestamp = strtotime($week_end . ' +1 hour'); // Commencer 1h après la fin de la semaine précédente
@@ -206,9 +208,9 @@ if ($_POST && isset($_POST['finalize_week'])) {
         $new_end = date('Y-m-d H:i:s', $new_end_timestamp);
         
         // Vérifier si la nouvelle période n'existe pas déjà (comparer seulement la date)
-        $checkStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE DATE(week_start) = ?");
-        $checkStmt->execute([date('Y-m-d', $new_start_timestamp)]);
-        $existingWeek = $checkStmt->fetch();
+        $checkNewStmt = $db->prepare("SELECT * FROM weekly_taxes WHERE DATE(week_start) = ?");
+        $checkNewStmt->execute([date('Y-m-d', $new_start_timestamp)]);
+        $existingWeek = $checkNewStmt->fetch();
         
         if (!$existingWeek) {
             $createStmt = $db->prepare("
@@ -218,7 +220,28 @@ if ($_POST && isset($_POST['finalize_week'])) {
             $createStmt->execute([$new_start, $new_end]);
         }
         
-        $success_message = "Semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " finalisée avec succès à " . date('H:i:s', strtotime($finalization_time)) . ". Nouvelle semaine créée du " . date('d/m/Y H:i', strtotime($new_start)) . " au " . date('d/m/Y H:i', strtotime($new_end)) . " (décalage d'1h pour éviter les conflits).";
+        // Créer la table delayed_finalizations si elle n'existe pas
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS delayed_finalizations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                week_start TEXT NOT NULL,
+                week_end TEXT NOT NULL,
+                finalization_time TEXT NOT NULL,
+                execution_time TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                executed_at TEXT NULL
+            )
+        ");
+        
+        // Enregistrer la finalisation différée
+        $delayedStmt = $db->prepare("
+            INSERT INTO delayed_finalizations (week_start, week_end, finalization_time, execution_time, status)
+            VALUES (?, ?, ?, ?, 'pending')
+        ");
+        $delayedStmt->execute([$week_start, $week_end, $finalization_time, $execution_time]);
+        
+        $success_message = "Finalisation programmée pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " à " . date('H:i:s', strtotime($finalization_time)) . ". Les effets seront appliqués automatiquement dans 1 heure (" . date('H:i:s', strtotime($execution_time)) . "). Nouvelle semaine créée du " . date('d/m/Y H:i', strtotime($new_start)) . " au " . date('d/m/Y H:i', strtotime($new_end)) . ".";
         
         // Rediriger vers la nouvelle semaine
         header("Location: taxes.php?week=" . urlencode($new_start) . "&success=1");
@@ -554,6 +577,21 @@ if ($week_start !== null && $week_end !== null) {
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
+                
+                <!-- Statut des finalisations différées -->
+                <div id="delayed-finalizations-status" class="mb-4" style="display: none;">
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-clock me-2"></i>
+                                Finalisations en attente
+                            </h5>
+                        </div>
+                        <div class="card-body" id="delayed-finalizations-content">
+                            <!-- Contenu chargé dynamiquement -->
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- Sélecteur de semaine -->
                 <?php if (!$no_weeks_available): ?>
@@ -962,5 +1000,72 @@ if ($week_start !== null && $week_end !== null) {
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script pour vérifier les finalisations différées -->
+    <script>
+    function checkDelayedFinalizations() {
+        fetch('check_delayed_finalizations.php')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.finalizations.length > 0) {
+                    const pendingFinalizations = data.finalizations.filter(f => f.status === 'pending');
+                    
+                    if (pendingFinalizations.length > 0) {
+                        document.getElementById('delayed-finalizations-status').style.display = 'block';
+                        
+                        let content = '<div class="row">';
+                        
+                        pendingFinalizations.forEach(finalization => {
+                            const weekStart = new Date(finalization.week_start).toLocaleDateString('fr-FR');
+                            const weekEnd = new Date(finalization.week_end).toLocaleDateString('fr-FR');
+                            const executionTime = new Date(finalization.execution_time).toLocaleString('fr-FR');
+                            
+                            let timeDisplay = '';
+                            if (finalization.time_remaining > 0) {
+                                const hours = Math.floor(finalization.time_remaining / 3600);
+                                const minutes = Math.floor((finalization.time_remaining % 3600) / 60);
+                                const seconds = finalization.time_remaining % 60;
+                                timeDisplay = `<span class="text-warning"><i class="fas fa-hourglass-half me-1"></i>Reste ${hours}h ${minutes}m ${seconds}s</span>`;
+                            } else if (finalization.can_execute_now) {
+                                timeDisplay = '<span class="text-success"><i class="fas fa-check-circle me-1"></i>Prêt à exécuter</span>';
+                            }
+                            
+                            content += `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card border-warning">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Semaine du ${weekStart} au ${weekEnd}</h6>
+                                            <p class="card-text small">
+                                                <strong>Programmée pour :</strong> ${executionTime}<br>
+                                                <strong>Statut :</strong> ${timeDisplay}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        content += '</div>';
+                        document.getElementById('delayed-finalizations-content').innerHTML = content;
+                    } else {
+                        document.getElementById('delayed-finalizations-status').style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('delayed-finalizations-status').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la vérification des finalisations différées:', error);
+            });
+    }
+    
+    // Vérifier au chargement de la page
+    document.addEventListener('DOMContentLoaded', function() {
+        checkDelayedFinalizations();
+        
+        // Vérifier toutes les 30 secondes
+        setInterval(checkDelayedFinalizations, 30000);
+    });
+    </script>
 </body>
 </html>
