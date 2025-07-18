@@ -14,6 +14,7 @@ error_reporting(E_ALL);
 require_once '../includes/auth.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
+require_once '../includes/week_functions.php';
 
 // Vérifier l'authentification et les permissions
 requireLogin();
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 try {
                     // Vérifier qu'il y a une semaine active pour enregistrer la vente
-                    $activeWeek = getActiveWeek();
+                    $activeWeek = getActiveWeekNew();
                     if (!$activeWeek) {
                         throw new Exception('Aucune semaine active trouvée. Veuillez contacter un administrateur.');
                     }
@@ -150,6 +151,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                     
                     $sale_id = $db->lastInsertId();
+                    
+                    // Assigner la vente à la semaine active
+                    assignToActiveWeek('sales', $sale_id);
                     
                     // Ajouter les détails de la vente et mettre à jour le stock
                     foreach ($sale_items as $item) {

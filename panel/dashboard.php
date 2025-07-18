@@ -7,40 +7,70 @@
  */
 
 require_once '../includes/auth.php';
+require_once '../includes/week_functions.php';
 requireLogin();
 
 $auth = getAuth();
 $user = $auth->getCurrentUser();
 $db = getDB();
 
+// Vérifier la semaine active
+$activeWeek = getActiveWeekNew();
+$weekInfo = $activeWeek ? "Semaine {$activeWeek['week_number']} (ID: {$activeWeek['id']})" : "Aucune semaine active";
+
 // Statistiques pour le tableau de bord
 $stats = [];
 
 try {
-    // Statistiques des ménages pour l'utilisateur actuel
-    $stmt = $db->prepare("
-        SELECT 
-            COUNT(*) as total_services,
-            SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as services_en_cours,
-            SUM(cleaning_count) as total_menages,
-            SUM(total_salary) as total_salaire
-        FROM cleaning_services 
-        WHERE user_id = ?
-    ");
-    $stmt->execute([$user['id']]);
-    $stats['cleaning'] = $stmt->fetch();
-    
-    // Statistiques des ventes si CDI ou plus
-    if ($auth->canAccessCashRegister()) {
+    // Statistiques des ménages pour l'utilisateur actuel (semaine active)
+    if ($activeWeek) {
         $stmt = $db->prepare("
             SELECT 
-                COUNT(*) as total_ventes,
-                SUM(final_amount) as ca_total,
-                SUM(employee_commission) as commissions_total
-            FROM sales 
+                COUNT(*) as total_services,
+                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as services_en_cours,
+                SUM(cleaning_count) as total_menages,
+                SUM(total_salary) as total_salaire
+            FROM cleaning_services 
+            WHERE user_id = ? AND week_id = ?
+        ");
+        $stmt->execute([$user['id'], $activeWeek['id']]);
+    } else {
+        $stmt = $db->prepare("
+            SELECT 
+                COUNT(*) as total_services,
+                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as services_en_cours,
+                SUM(cleaning_count) as total_menages,
+                SUM(total_salary) as total_salaire
+            FROM cleaning_services 
             WHERE user_id = ?
         ");
         $stmt->execute([$user['id']]);
+    }
+    $stats['cleaning'] = $stmt->fetch();
+    
+    // Statistiques des ventes si CDI ou plus (semaine active)
+    if ($auth->canAccessCashRegister()) {
+        if ($activeWeek) {
+            $stmt = $db->prepare("
+                SELECT 
+                    COUNT(*) as total_ventes,
+                    SUM(final_amount) as ca_total,
+                    SUM(employee_commission) as commissions_total
+                FROM sales 
+                WHERE user_id = ? AND week_id = ?
+            ");
+            $stmt->execute([$user['id'], $activeWeek['id']]);
+        } else {
+            $stmt = $db->prepare("
+                SELECT 
+                    COUNT(*) as total_ventes,
+                    SUM(final_amount) as ca_total,
+                    SUM(employee_commission) as commissions_total
+                FROM sales 
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$user['id']]);
+        }
         $stats['sales'] = $stmt->fetch();
     }
     
@@ -49,6 +79,17 @@ try {
         // Nombre d'employés actifs
         $stmt = $db->query("SELECT COUNT(*) as total_employees FROM users WHERE status = 'active'");
         $stats['employees'] = $stmt->fetch()['total_employees'];
+        
+        // CA de la semaine active
+        if ($activeWeek) {
+            $stmt = $db->prepare("
+                SELECT SUM(final_amount) as ca_semaine 
+                FROM sales 
+                WHERE week_id = ?
+            ");
+            $stmt->execute([$activeWeek['id']]);
+            $stats['ca_semaine'] = $stmt->fetch()['ca_semaine'] ?? 0;
+        }
         
         // CA du jour
         $stmt = $db->query("
@@ -122,6 +163,16 @@ try {
                             </span>
                         </div>
                     </div>
+                </div>
+                
+                <!-- Information semaine active -->
+                <div class="alert alert-primary alert-dismissible fade show" role="alert">
+                    <i class="fas fa-calendar-week me-2"></i>
+                    <strong>Semaine active :</strong> <?php echo $weekInfo; ?>
+                    <?php if ($auth->canManageEmployees()): ?>
+                        <a href="week_management.php" class="alert-link ms-2">Gérer les semaines</a>
+                    <?php endif; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
                 
                 <!-- Message de bienvenue -->
@@ -275,11 +326,14 @@ try {
                                 <div class="row no-gutters align-items-center">
                                     <div class="col mr-2">
                                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                            CA Aujourd'hui
+                                            CA Semaine Active
                                         </div>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                            <?php echo number_format($stats['ca_jour'] ?? 0, 2); ?>$
+                                            <?php echo number_format($stats['ca_semaine'] ?? 0, 2); ?>$
                                         </div>
+                                        <small class="text-muted">
+                                            Aujourd'hui: <?php echo number_format($stats['ca_jour'] ?? 0, 2); ?>$
+                                        </small>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-chart-line fa-2x text-success"></i>

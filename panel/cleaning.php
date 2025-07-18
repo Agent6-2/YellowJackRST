@@ -9,6 +9,7 @@
 require_once '../includes/auth.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
+require_once '../includes/week_functions.php';
 
 // Vérifier l'authentification
 requireLogin();
@@ -52,13 +53,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!$current_session) {
                     try {
                         // Vérifier qu'il y a une semaine active pour enregistrer le service
-                        $activeWeek = getActiveWeek();
+                        $activeWeek = getActiveWeekNew();
                         if (!$activeWeek) {
                             throw new Exception('Aucune semaine active trouvée. Veuillez contacter un administrateur.');
                         }
                         
                         $stmt = $db->prepare("INSERT INTO cleaning_services (user_id, start_time) VALUES (?, ?)");
                         $stmt->execute([$user['id'], getCurrentDateTime()]);
+                        $service_id = $db->lastInsertId();
+                        
+                        // Assigner le service à la semaine active
+                        assignToActiveWeek('cleaning_services', $service_id);
+                        
                         $message = 'Service démarré avec succès !';
                         
                         // Rediriger pour éviter la resoumission du formulaire et forcer la mise à jour de l'affichage
