@@ -223,15 +223,17 @@ if ($_POST && isset($_POST['finalize_week'])) {
         // Créer la table delayed_finalizations si elle n'existe pas
         $db->exec("
             CREATE TABLE IF NOT EXISTS delayed_finalizations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                week_start TEXT NOT NULL,
-                week_end TEXT NOT NULL,
-                finalization_time TEXT NOT NULL,
-                execution_time TEXT NOT NULL,
-                status TEXT DEFAULT 'pending',
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                executed_at TEXT NULL
-            )
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                week_start DATETIME NOT NULL,
+                week_end DATETIME NOT NULL,
+                finalization_time DATETIME NOT NULL,
+                execution_time DATETIME NOT NULL,
+                status ENUM('pending', 'executed', 'failed') DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                executed_at TIMESTAMP NULL,
+                INDEX idx_status (status),
+                INDEX idx_execution_time (execution_time)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
         
         // Enregistrer la finalisation différée

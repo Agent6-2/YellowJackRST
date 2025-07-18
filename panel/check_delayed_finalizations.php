@@ -1,11 +1,10 @@
 <?php
 // Vérifier le statut des finalisations différées
 
-require_once '../includes/auth.php';
+require_once '../config/database.php';
 
 try {
-    $db = new PDO("sqlite:../database/yellowjack.db");
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db = getDB();
     
     // Récupérer toutes les finalisations différées
     $stmt = $db->prepare("

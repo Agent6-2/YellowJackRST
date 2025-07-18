@@ -22,7 +22,8 @@ Ce système permet de différer l'application des effets de finalisation d'une s
 - Modifications dans `taxes.php` : Affichage en temps réel du statut
 
 ### Base de données
-- Table `delayed_finalizations` : Stocke les finalisations programmées
+- **Table** : `delayed_finalizations` (MySQL)
+- **Base de données** : Même base que le projet principal (MySQL)
 - `create_delayed_finalization_table.php` : Script de création de la table
 
 ## Configuration du planificateur de tâches Windows

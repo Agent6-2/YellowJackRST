@@ -1,11 +1,12 @@
 <?php
-// Script pour traiter les finalisations différées après 1 heure
+// Script de traitement des finalisations de semaine différées
+// À exécuter via cron toutes les minutes
 
-require_once '../includes/auth_local.php';
+require_once '../config/database.php';
 
 try {
-    $db = new PDO("sqlite:../database/yellowjack.db");
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // Connexion à la base de données MySQL
+    $db = getDB();
     
     // Récupérer les finalisations en attente dont l'heure d'exécution est dépassée
     $stmt = $db->prepare("
