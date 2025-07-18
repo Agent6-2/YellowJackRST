@@ -155,7 +155,8 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             // Prime ventes désactivée - les employés ne reçoivent que les commissions immédiates
             $prime_ventes = 0; // Pas de prime ventes hebdomadaire
             
-            $prime_totale = $prime_menage + $prime_ventes;
+            // Prime totale = Prime ménage + Commissions totales
+            $prime_totale = $prime_menage + $sales_stats['total_commissions'];
             
             // Insérer ou mettre à jour les performances
             $stmt = $db->prepare("
