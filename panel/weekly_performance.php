@@ -241,6 +241,7 @@ $totals = [
     'total_revenue' => 0,
     'prime_menage_total' => 0,
     'prime_ventes_total' => 0,
+    'total_commissions_total' => 0
     'prime_totale_total' => 0
 ];
 
@@ -251,6 +252,7 @@ foreach ($performances as $perf) {
     $totals['total_revenue'] += $perf['total_revenue'];
     $totals['prime_menage_total'] += $perf['prime_menage'];
     $totals['prime_ventes_total'] += $perf['prime_ventes'];
+    $totals['total_commissions_total'] += $perf['total_commissions'];
     $totals['prime_totale_total'] += $perf['prime_totale'];
 }
 
@@ -528,7 +530,7 @@ foreach ($performances as $perf) {
                                         <th class="text-center">Ventes</th>
                                         <th class="text-center">CA Ventes</th>
                                         <th class="text-center">Prime Ménage</th>
-                                        <th class="text-center">Prime Ventes</th>
+                                        <th class="text-center">Commissions Totales</th>
                                         <th class="text-center"><strong>Prime Totale</strong></th>
                                     </tr>
                                 </thead>
@@ -551,7 +553,7 @@ foreach ($performances as $perf) {
                                                 <strong><?php echo number_format($perf['prime_menage'], 2); ?>€</strong>
                                             </td>
                                             <td class="text-center text-info">
-                                                <strong><?php echo number_format($perf['prime_ventes'], 2); ?>€</strong>
+                                                <strong><?php echo number_format($perf['total_commissions'], 2); ?>€</strong>
                                             </td>
                                             <td class="text-center text-warning">
                                                 <strong><?php echo number_format($perf['prime_totale'], 2); ?>€</strong>
@@ -570,7 +572,7 @@ foreach ($performances as $perf) {
                                             <strong><?php echo number_format($totals['prime_menage_total'], 2); ?>€</strong>
                                         </th>
                                         <th class="text-center text-info">
-                                            <strong><?php echo number_format($totals['prime_ventes_total'], 2); ?>€</strong>
+                                            <strong><?php echo number_format($totals['total_commissions_total'], 2); ?>€</strong>
                                         </th>
                                         <th class="text-center text-warning">
                                             <strong><?php echo number_format($totals['prime_totale_total'], 2); ?>€</strong>
