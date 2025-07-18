@@ -147,13 +147,8 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                 // CDI, Responsable et Patron: exactement 36% du salaire ménage
             }
             
-            // Prime ventes (basée sur le CA total) - 20% du CA exactement
-            if ($sales_stats['total_revenue'] > 0) {
-                // Utiliser directement 20% (0.20) pour la prime vente sur le CA total
-                $prime_ventes = $sales_stats['total_revenue'] * 0.20;
-                
-                // Pas de bonus supplémentaire - juste 20% du CA
-            }
+            // Prime ventes désactivée - les employés ne reçoivent que les commissions immédiates
+            $prime_ventes = 0; // Pas de prime ventes hebdomadaire
             
             $prime_totale = $prime_menage + $prime_ventes;
             
