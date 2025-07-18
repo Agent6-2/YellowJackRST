@@ -41,14 +41,17 @@ function getFridayAfterFriday($friday) {
 }
 
 /**
- * Obtenir la semaine active actuelle (du 27/03/2025 au 04/07/2025 par défaut)
+ * Obtenir la semaine active actuelle (vendredi à vendredi inclus)
  * @return array Tableau avec week_start et week_end
  */
 function getCurrentWeekPeriod() {
-    // Période fixe actuelle
+    $today = date('Y-m-d');
+    $week_start = getFridayOfWeek($today);
+    $week_end = getFridayAfterFriday($week_start);
+    
     return [
-        'week_start' => '2025-03-27',
-        'week_end' => '2025-07-04'
+        'week_start' => $week_start,
+        'week_end' => $week_end
     ];
 }
 
@@ -112,6 +115,10 @@ function getActiveWeek() {
  */
 function isDateInActiveWeek($date) {
     $activeWeek = getActiveWeek();
+    if (!$activeWeek) {
+        return false;
+    }
+    
     $checkDate = date('Y-m-d', strtotime($date));
     
     return $checkDate >= $activeWeek['week_start'] && $checkDate <= $activeWeek['week_end'];

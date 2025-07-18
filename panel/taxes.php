@@ -135,14 +135,21 @@ if ($_POST && isset($_POST['calculate_taxes'])) {
         $stmt->execute([$week_start, $week_end, $week_start, $week_end]);
         $result = $stmt->fetch();
         
-        // Calculer séparément pour éviter les problèmes de jointure
-        $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE DATE(created_at) >= ? AND DATE(created_at) <= ?");
-        $stmt_sales->execute([$week_start, $week_end]);
+        // Calculer séparément avec timestamps précis (même logique que l'affichage)
+        $week_end_timestamp = date('Y-m-d H:i:s', strtotime($week_end . ' 23:59:59'));
+        
+        $stmt_sales = $db->prepare("SELECT COALESCE(SUM(final_amount), 0) as sales_revenue FROM sales WHERE created_at >= ? AND created_at <= ?");
+        $stmt_sales->execute([$week_start, $week_end_timestamp]);
         $sales_result = $stmt_sales->fetch();
         
-        $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE DATE(start_time) >= ? AND DATE(start_time) <= ? AND status = 'completed'");
-        $stmt_cleaning->execute([$week_start, $week_end]);
+        $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE start_time >= ? AND start_time <= ? AND status = 'completed'");
+        $stmt_cleaning->execute([$week_start, $week_end_timestamp]);
         $cleaning_result = $stmt_cleaning->fetch();
+        
+        // Debug: afficher les valeurs calculées lors du calcul d'impôts
+        error_log("Calcul Impôts - Semaine: $week_start à $week_end_timestamp");
+        error_log("Calcul Impôts - Ventes: " . $sales_result['sales_revenue']);
+        error_log("Calcul Impôts - Ménage: " . $cleaning_result['cleaning_revenue']);
         
         $total_revenue = $sales_result['sales_revenue'] + $cleaning_result['cleaning_revenue'];
         
@@ -357,6 +364,11 @@ if ($week_start !== null && $week_end !== null) {
         $stmt_cleaning = $db->prepare("SELECT COALESCE(SUM(total_salary), 0) as cleaning_revenue FROM cleaning_services WHERE start_time >= ? AND start_time <= ? AND status = 'completed'");
         $stmt_cleaning->execute([$week_start, $week_end_timestamp]);
         $cleaning_result = $stmt_cleaning->fetch();
+        
+        // Debug: afficher les valeurs calculées
+        error_log("CA Debug - Semaine: $week_start à $week_end_timestamp");
+        error_log("CA Debug - Ventes: " . $sales_result['sales_revenue']);
+        error_log("CA Debug - Ménage: " . $cleaning_result['cleaning_revenue']);
         
         $current_revenue = $sales_result['sales_revenue'] + $cleaning_result['cleaning_revenue'];
     } catch (Exception $e) {
