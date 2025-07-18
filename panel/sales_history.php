@@ -384,15 +384,15 @@ $page_title = 'Historique des Ventes';
     </div>
     
     <!-- Modal détails de vente -->
-    <div class="modal fade" id="saleDetailsModal" tabindex="-1">
+    <div class="modal fade" id="saleDetailsModal" tabindex="-1" aria-labelledby="saleDetailsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">
+                    <h5 class="modal-title" id="saleDetailsModalLabel">
                         <i class="fas fa-receipt me-2"></i>
                         Détails de la vente
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <div class="modal-body" id="saleDetailsContent">
                     <div class="text-center">
@@ -426,18 +426,33 @@ $page_title = 'Historique des Ventes';
         fetch(`get_sale_details.php?id=${saleId}`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Erreur lors du chargement');
+                    // Gestion spécifique des erreurs HTTP
+                    if (response.status === 500) {
+                        throw new Error(`Erreur serveur (${response.status}): Problème lors du traitement de la demande`);
+                    } else if (response.status === 404) {
+                        throw new Error(`Vente non trouvée (${response.status})`);
+                    } else if (response.status === 401) {
+                        throw new Error(`Accès non autorisé (${response.status})`);
+                    } else {
+                        throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+                    }
                 }
                 return response.json();
             })
             .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
                 displaySaleDetails(data);
             })
             .catch(error => {
+                console.error('Erreur lors du chargement des détails de vente:', error);
                 content.innerHTML = `
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        Erreur lors du chargement des détails: ${error.message}
+                        <strong>Erreur lors du chargement des détails:</strong><br>
+                        ${error.message}<br>
+                        <small class="text-muted">Vente ID: ${saleId}</small>
                     </div>
                 `;
             });
