@@ -8,7 +8,7 @@ require_once __DIR__ . '/../config/database.php';
 
 // Vérifier les permissions
 $auth = getAuth();
-if (!$auth->hasPermission('CDI')) {
+if (!$auth->hasPermission('cashier')) {
     header('Content-Type: application/json');
     echo json_encode(['error' => 'Accès refusé. Permissions insuffisantes.']);
     exit;
@@ -51,9 +51,15 @@ if (!$auth->canManageEmployees()) {
     $params = [$sale_id];
 }
 
-$stmt = $db->prepare($query);
-$stmt->execute($params);
-$sale = $stmt->fetch();
+try {
+    $stmt = $db->prepare($query);
+    $stmt->execute($params);
+    $sale = $stmt->fetch();
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Erreur de base de données: ' . $e->getMessage()]);
+    exit;
+}
 
 if (!$sale) {
     http_response_code(404);
@@ -62,18 +68,24 @@ if (!$sale) {
 }
 
 // Récupérer les articles de la vente
-$stmt = $db->prepare("
-    SELECT 
-        si.*,
-        p.name as product_name,
-        p.price as product_price
-    FROM sale_items si
-    LEFT JOIN products p ON si.product_id = p.id
-    WHERE si.sale_id = ?
-    ORDER BY si.id
-");
-$stmt->execute([$sale_id]);
-$items = $stmt->fetchAll();
+try {
+    $stmt = $db->prepare("
+        SELECT 
+            si.*,
+            p.name as product_name,
+            p.price as product_price
+        FROM sale_items si
+        LEFT JOIN products p ON si.product_id = p.id
+        WHERE si.sale_id = ?
+        ORDER BY si.id
+    ");
+    $stmt->execute([$sale_id]);
+    $items = $stmt->fetchAll();
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Erreur lors de la récupération des articles: ' . $e->getMessage()]);
+    exit;
+}
 
 // Calculer les détails de réduction
 $loyal_discount = 0;
