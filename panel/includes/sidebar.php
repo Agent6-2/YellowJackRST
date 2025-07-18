@@ -182,6 +182,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Primes
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $current_page === 'discord_config.php' ? 'active' : ''; ?>" href="discord_config.php">
+                    <i class="fab fa-discord"></i>
+                    Discord
+                </a>
+            </li>
         </ul>
         <?php endif; ?>
         

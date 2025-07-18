@@ -84,12 +84,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-include __DIR__ . '/../includes/header.php';
 ?>
-
-<div class="container-fluid">
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Discord - Le Yellowjack</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="../assets/css/panel.css" rel="stylesheet">
+    
+    <style>
+        .sidebar {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .navbar {
+            background-color: #343a40 !important;
+        }
+        .nav-link.active {
+            background-color: #007bff;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <?php include __DIR__ . '/includes/header.php'; ?>
+    
+    <div class="container-fluid">
     <div class="row">
-        <?php include __DIR__ . '/../includes/sidebar.php'; ?>
+        <?php include __DIR__ . '/includes/sidebar.php'; ?>
         
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -269,7 +298,7 @@ include __DIR__ . '/../includes/header.php';
                             <div class="mb-3">
                                 <strong>Configuration actuelle :</strong>
                                 <br>
-                                <?php if (!empty(DISCORD_WEBHOOK_URL)): ?>
+                                <?php if (!empty($config['webhook_url'])): ?>
                                     <span class="badge bg-success">
                                         <i class="fas fa-check me-1"></i>
                                         Configuré
@@ -334,4 +363,7 @@ include __DIR__ . '/../includes/header.php';
     </div>
 </div>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
