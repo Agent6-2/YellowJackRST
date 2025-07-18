@@ -241,7 +241,7 @@ $totals = [
     'total_revenue' => 0,
     'prime_menage_total' => 0,
     'prime_ventes_total' => 0,
-    'total_commissions_total' => 0
+    'total_commissions_total' => 0,
     'prime_totale_total' => 0
 ];
 
