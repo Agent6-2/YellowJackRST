@@ -199,27 +199,51 @@ function calculateWeekStats($week_id) {
     try {
         $db = getDB();
         
+        // Vérifier si les tables existent et ont la colonne week_id
+        $sales_stats = ['total_sales_count' => 0, 'total_sales_revenue' => 0];
+        $cleaning_stats = ['total_cleaning_count' => 0, 'total_cleaning_revenue' => 0];
+        
         // Statistiques des ventes
-        $stmt = $db->prepare("
-            SELECT 
-                COUNT(*) as total_sales_count,
-                COALESCE(SUM(final_amount), 0) as total_sales_revenue
-            FROM sales 
-            WHERE week_id = ?
-        ");
-        $stmt->execute([$week_id]);
-        $sales_stats = $stmt->fetch();
+        try {
+            $check_sales = $db->query("SHOW TABLES LIKE 'sales'");
+            if ($check_sales->rowCount() > 0) {
+                $check_column = $db->query("SHOW COLUMNS FROM sales LIKE 'week_id'");
+                if ($check_column->rowCount() > 0) {
+                    $stmt = $db->prepare("
+                        SELECT 
+                            COUNT(*) as total_sales_count,
+                            COALESCE(SUM(final_amount), 0) as total_sales_revenue
+                        FROM sales 
+                        WHERE week_id = ?
+                    ");
+                    $stmt->execute([$week_id]);
+                    $sales_stats = $stmt->fetch();
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Erreur statistiques ventes: " . $e->getMessage());
+        }
         
         // Statistiques du ménage
-        $stmt = $db->prepare("
-            SELECT 
-                COUNT(*) as total_cleaning_count,
-                COALESCE(SUM(total_salary), 0) as total_cleaning_revenue
-            FROM cleaning_services 
-            WHERE week_id = ? AND status = 'completed'
-        ");
-        $stmt->execute([$week_id]);
-        $cleaning_stats = $stmt->fetch();
+        try {
+            $check_cleaning = $db->query("SHOW TABLES LIKE 'cleaning_services'");
+            if ($check_cleaning->rowCount() > 0) {
+                $check_column = $db->query("SHOW COLUMNS FROM cleaning_services LIKE 'week_id'");
+                if ($check_column->rowCount() > 0) {
+                    $stmt = $db->prepare("
+                        SELECT 
+                            COUNT(*) as total_cleaning_count,
+                            COALESCE(SUM(total_salary), 0) as total_cleaning_revenue
+                        FROM cleaning_services 
+                        WHERE week_id = ? AND status = 'completed'
+                    ");
+                    $stmt->execute([$week_id]);
+                    $cleaning_stats = $stmt->fetch();
+                }
+            }
+        } catch (Exception $e) {
+            error_log("Erreur statistiques ménage: " . $e->getMessage());
+        }
         
         return [
             'total_sales_count' => $sales_stats['total_sales_count'] ?? 0,

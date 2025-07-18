@@ -23,55 +23,122 @@ $stats = [];
 
 try {
     // Statistiques des ménages pour l'utilisateur actuel (semaine active)
-    if ($activeWeek) {
-        $stmt = $db->prepare("
-            SELECT 
-                COUNT(*) as total_services,
-                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as services_en_cours,
-                SUM(cleaning_count) as total_menages,
-                SUM(total_salary) as total_salaire
-            FROM cleaning_services 
-            WHERE user_id = ? AND week_id = ?
-        ");
-        $stmt->execute([$user['id'], $activeWeek['id']]);
-    } else {
-        $stmt = $db->prepare("
-            SELECT 
-                COUNT(*) as total_services,
-                SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as services_en_cours,
-                SUM(cleaning_count) as total_menages,
-                SUM(total_salary) as total_salaire
-            FROM cleaning_services 
-            WHERE user_id = ?
-        ");
-        $stmt->execute([$user['id']]);
+    try {
+        // Vérifier si la table cleaning_services existe et a la colonne week_id
+        $check_table = $db->query("SHOW TABLES LIKE 'cleaning_services'");
+        if ($check_table->rowCount() > 0) {
+            if ($activeWeek) {
+                $check_column = $db->query("SHOW COLUMNS FROM cleaning_services LIKE 'week_id'");
+                if ($check_column->rowCount() > 0) {
+                    $stmt = $db->prepare("
+                        SELECT 
+                            COUNT(*) as total_services,
+                            SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as services_en_cours,
+                            SUM(cleaning_count) as total_menages,
+                            SUM(total_salary) as total_salaire
+                        FROM cleaning_services 
+                        WHERE user_id = ? AND week_id = ?
+                    ");
+                    $stmt->execute([$user['id'], $activeWeek['id']]);
+                } else {
+                    $stmt = $db->prepare("
+                        SELECT 
+                            COUNT(*) as total_services,
+                            SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as services_en_cours,
+                            SUM(cleaning_count) as total_menages,
+                            SUM(total_salary) as total_salaire
+                        FROM cleaning_services 
+                        WHERE user_id = ?
+                    ");
+                    $stmt->execute([$user['id']]);
+                }
+            } else {
+                $stmt = $db->prepare("
+                    SELECT 
+                        COUNT(*) as total_services,
+                        SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as services_en_cours,
+                        SUM(cleaning_count) as total_menages,
+                        SUM(total_salary) as total_salaire
+                    FROM cleaning_services 
+                    WHERE user_id = ?
+                ");
+                $stmt->execute([$user['id']]);
+            }
+            $stats['cleaning'] = $stmt->fetch();
+        } else {
+            $stats['cleaning'] = [
+                'total_services' => 0,
+                'services_en_cours' => 0,
+                'total_menages' => 0,
+                'total_salaire' => 0
+            ];
+        }
+    } catch (PDOException $e) {
+        error_log('Erreur statistiques ménage dashboard : ' . $e->getMessage());
+        $stats['cleaning'] = [
+            'total_services' => 0,
+            'services_en_cours' => 0,
+            'total_menages' => 0,
+            'total_salaire' => 0
+        ];
     }
-    $stats['cleaning'] = $stmt->fetch();
     
     // Statistiques des ventes si CDI ou plus (semaine active)
     if ($auth->canAccessCashRegister()) {
-        if ($activeWeek) {
-            $stmt = $db->prepare("
-                SELECT 
-                    COUNT(*) as total_ventes,
-                    SUM(final_amount) as ca_total,
-                    SUM(employee_commission) as commissions_total
-                FROM sales 
-                WHERE user_id = ? AND week_id = ?
-            ");
-            $stmt->execute([$user['id'], $activeWeek['id']]);
-        } else {
-            $stmt = $db->prepare("
-                SELECT 
-                    COUNT(*) as total_ventes,
-                    SUM(final_amount) as ca_total,
-                    SUM(employee_commission) as commissions_total
-                FROM sales 
-                WHERE user_id = ?
-            ");
-            $stmt->execute([$user['id']]);
+        try {
+            // Vérifier si la table sales existe et a la colonne week_id
+            $check_table = $db->query("SHOW TABLES LIKE 'sales'");
+            if ($check_table->rowCount() > 0) {
+                if ($activeWeek) {
+                    $check_column = $db->query("SHOW COLUMNS FROM sales LIKE 'week_id'");
+                    if ($check_column->rowCount() > 0) {
+                        $stmt = $db->prepare("
+                            SELECT 
+                                COUNT(*) as total_ventes,
+                                SUM(final_amount) as ca_total,
+                                SUM(employee_commission) as commissions_total
+                            FROM sales 
+                            WHERE user_id = ? AND week_id = ?
+                        ");
+                        $stmt->execute([$user['id'], $activeWeek['id']]);
+                    } else {
+                        $stmt = $db->prepare("
+                            SELECT 
+                                COUNT(*) as total_ventes,
+                                SUM(final_amount) as ca_total,
+                                SUM(employee_commission) as commissions_total
+                            FROM sales 
+                            WHERE user_id = ?
+                        ");
+                        $stmt->execute([$user['id']]);
+                    }
+                } else {
+                    $stmt = $db->prepare("
+                        SELECT 
+                            COUNT(*) as total_ventes,
+                            SUM(final_amount) as ca_total,
+                            SUM(employee_commission) as commissions_total
+                        FROM sales 
+                        WHERE user_id = ?
+                    ");
+                    $stmt->execute([$user['id']]);
+                }
+                $stats['sales'] = $stmt->fetch();
+            } else {
+                $stats['sales'] = [
+                    'total_ventes' => 0,
+                    'ca_total' => 0,
+                    'commissions_total' => 0
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log('Erreur statistiques ventes dashboard : ' . $e->getMessage());
+            $stats['sales'] = [
+                'total_ventes' => 0,
+                'ca_total' => 0,
+                'commissions_total' => 0
+            ];
         }
-        $stats['sales'] = $stmt->fetch();
     }
     
     // Statistiques globales pour les responsables/patrons
@@ -82,13 +149,28 @@ try {
         
         // CA de la semaine active
         if ($activeWeek) {
-            $stmt = $db->prepare("
-                SELECT SUM(final_amount) as ca_semaine 
-                FROM sales 
-                WHERE week_id = ?
-            ");
-            $stmt->execute([$activeWeek['id']]);
-            $stats['ca_semaine'] = $stmt->fetch()['ca_semaine'] ?? 0;
+            try {
+                $check_table = $db->query("SHOW TABLES LIKE 'sales'");
+                if ($check_table->rowCount() > 0) {
+                    $check_column = $db->query("SHOW COLUMNS FROM sales LIKE 'week_id'");
+                    if ($check_column->rowCount() > 0) {
+                        $stmt = $db->prepare("
+                            SELECT SUM(final_amount) as ca_semaine 
+                            FROM sales 
+                            WHERE week_id = ?
+                        ");
+                        $stmt->execute([$activeWeek['id']]);
+                        $stats['ca_semaine'] = $stmt->fetch()['ca_semaine'] ?? 0;
+                    } else {
+                        $stats['ca_semaine'] = 0;
+                    }
+                } else {
+                    $stats['ca_semaine'] = 0;
+                }
+            } catch (PDOException $e) {
+                error_log('Erreur CA semaine dashboard : ' . $e->getMessage());
+                $stats['ca_semaine'] = 0;
+            }
         }
         
         // CA du jour
