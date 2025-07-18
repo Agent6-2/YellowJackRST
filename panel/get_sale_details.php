@@ -48,13 +48,8 @@ $query = "
     WHERE s.id = ?
 ";
 
-// Restriction par utilisateur (sauf pour les responsables/patrons)
-if (!$auth->canManageEmployees()) {
-    $query .= " AND s.user_id = ?";
-    $params = [$sale_id, $user['id']];
-} else {
-    $params = [$sale_id];
-}
+// Tous les utilisateurs connectés peuvent voir les détails des ventes
+$params = [$sale_id];
 
 try {
     $stmt = $db->prepare($query);
