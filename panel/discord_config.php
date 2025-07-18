@@ -9,6 +9,7 @@
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/discord_webhook.php';
+require_once __DIR__ . '/../includes/discord_config.php';
 
 // Vérifier l'authentification et les permissions
 $auth = getAuth();
@@ -26,41 +27,43 @@ $user = $auth->getCurrentUser();
 $message = '';
 $error = '';
 
+// Charger la configuration Discord
+$discordConfig = getDiscordConfig();
+$config = $discordConfig->getConfig();
+
 // Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['test_webhook'])) {
         // Test du webhook
-        $webhook_url = $_POST['webhook_url'] ?? '';
-        
-        if (empty($webhook_url)) {
-            $error = 'Veuillez saisir une URL de webhook.';
+        $testResult = $discordConfig->testWebhook();
+        if ($testResult['success']) {
+            $message = "Test réussi ! Le webhook Discord fonctionne correctement.";
         } else {
-            $webhook = new DiscordWebhook($webhook_url);
-            $result = $webhook->sendMessage(
-                "🧪 Test de connexion depuis Le Yellowjack ! Configuration réussie.",
-                "Le Yellowjack Bot"
-            );
-            
-            if ($result) {
-                $message = 'Test réussi ! Le webhook Discord fonctionne correctement.';
-            } else {
-                $error = 'Test échoué. Vérifiez l\'URL du webhook et les permissions.';
-            }
+            $error = "Erreur lors du test : " . $testResult['error'];
         }
     } elseif (isset($_POST['save_config'])) {
-        // Sauvegarder la configuration (simulation)
-        $webhook_url = $_POST['webhook_url'] ?? '';
-        $notifications_enabled = isset($_POST['notifications_enabled']);
+        // Sauvegarde de la configuration
+        $newConfig = [
+            'webhook_url' => $_POST['webhook_url'] ?? '',
+            'notifications_enabled' => isset($_POST['notifications_enabled']),
+            'notify_sales' => isset($_POST['notify_sales']),
+            'notify_goals' => isset($_POST['notify_goals']),
+            'notify_errors' => isset($_POST['notify_errors']),
+            'notify_weekly_summary' => isset($_POST['notify_weekly_summary'])
+        ];
         
-        // Note: Dans un vrai système, vous devriez sauvegarder ces paramètres
-        // dans la base de données ou un fichier de configuration
-        $message = 'Configuration sauvegardée ! (Note: Modifiez DISCORD_WEBHOOK_URL dans config/database.php)';
+        if ($discordConfig->saveConfig($newConfig)) {
+            $message = "Configuration sauvegardée avec succès !";
+            $config = $discordConfig->getConfig(); // Recharger la config
+        } else {
+            $error = "Erreur lors de la sauvegarde de la configuration.";
+        }
     } elseif (isset($_POST['send_test_sale'])) {
         // Envoyer une notification de vente de test
-        if (empty(DISCORD_WEBHOOK_URL)) {
+        if (empty($discordConfig->getWebhookUrl())) {
             $error = 'Webhook Discord non configuré.';
         } else {
-            $webhook = getDiscordWebhook();
+            $webhook = new DiscordWebhook($discordConfig->getWebhookUrl());
             $test_sale_data = [
                 'id' => 9999,
                 'employee_name' => $user['first_name'] . ' ' . $user['last_name'],
@@ -133,7 +136,7 @@ include __DIR__ . '/../includes/header.php';
                                            class="form-control" 
                                            id="webhook_url" 
                                            name="webhook_url" 
-                                           value="<?php echo htmlspecialchars(DISCORD_WEBHOOK_URL); ?>"
+                                           value="<?php echo htmlspecialchars($config['webhook_url'] ?? ''); ?>"
                                            placeholder="https://discord.com/api/webhooks/...">
                                     <div class="form-text">
                                         Pour obtenir cette URL :
@@ -151,10 +154,63 @@ include __DIR__ . '/../includes/header.php';
                                                type="checkbox" 
                                                id="notifications_enabled" 
                                                name="notifications_enabled" 
-                                               checked>
+                                               <?php echo ($config['notifications_enabled'] ?? false) ? 'checked' : ''; ?>>
                                         <label class="form-check-label" for="notifications_enabled">
-                                            Activer les notifications Discord
+                                            <strong>Activer les notifications Discord</strong>
                                         </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="fas fa-bell me-1"></i>
+                                        Types de notifications
+                                    </label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox" 
+                                                       id="notify_sales" 
+                                                       name="notify_sales" 
+                                                       <?php echo ($config['notify_sales'] ?? false) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label" for="notify_sales">
+                                                    💰 Nouvelles ventes
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox" 
+                                                       id="notify_goals" 
+                                                       name="notify_goals" 
+                                                       <?php echo ($config['notify_goals'] ?? false) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label" for="notify_goals">
+                                                    🎯 Objectifs atteints
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox" 
+                                                       id="notify_errors" 
+                                                       name="notify_errors" 
+                                                       <?php echo ($config['notify_errors'] ?? false) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label" for="notify_errors">
+                                                    ⚠️ Erreurs système
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox" 
+                                                       id="notify_weekly_summary" 
+                                                       name="notify_weekly_summary" 
+                                                       <?php echo ($config['notify_weekly_summary'] ?? false) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label" for="notify_weekly_summary">
+                                                    📊 Résumés hebdomadaires
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
