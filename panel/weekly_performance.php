@@ -130,11 +130,14 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                     // CDD: 30% du salaire ménage
                     $prime_percentage = 0.30;
                 } elseif ($employee['role'] === 'CDI') {
-                    // CDI: 36% du salaire ménage
-                    $prime_percentage = 0.36;
-                } elseif ($employee['role'] === 'Responsable' || $employee['role'] === 'Patron') {
-                    // Responsable/Patron: 36% du salaire ménage
-                    $prime_percentage = 0.36;
+                    // CDI: 35% du salaire ménage
+                    $prime_percentage = 0.35;
+                } elseif ($employee['role'] === 'Responsable') {
+                    // Responsable: 40% du salaire ménage
+                    $prime_percentage = 0.40;
+                } elseif ($employee['role'] === 'Co-patron' || $employee['role'] === 'Patron') {
+                    // Co-patron/Patron: 40% du salaire ménage
+                    $prime_percentage = 0.40;
                 } else {
                     // Autres rôles: 30% par défaut
                     $prime_percentage = 0.30;
@@ -144,7 +147,9 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                 
                 // Pas de bonus - pourcentages fixes :
                 // CDD: exactement 30% du salaire ménage
-                // CDI, Responsable et Patron: exactement 36% du salaire ménage
+                // CDI: exactement 35% du salaire ménage
+                // Responsable: exactement 40% du salaire ménage
+                // Co-patron/Patron: exactement 40% du salaire ménage
             }
             
             // Prime ventes désactivée - les employés ne reçoivent que les commissions immédiates
