@@ -123,6 +123,16 @@ if ($_POST) {
                         <i class="fas fa-calendar-week me-2"></i>
                         Gestion des Semaines
                     </h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-outline-primary" id="refreshDataBtn">
+                                <i class="fas fa-sync-alt me-2"></i>Actualiser les Données
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="autoRefreshToggle">
+                                <i class="fas fa-clock me-2"></i>Auto: <span id="autoRefreshStatus">OFF</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Messages -->
@@ -436,5 +446,117 @@ if ($_POST) {
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script d'actualisation des données -->
+    <script>
+    let autoRefreshInterval = null;
+    let isAutoRefreshEnabled = false;
+    
+    // Fonction d'actualisation des données
+    async function refreshWeekData() {
+        const refreshBtn = document.getElementById('refreshDataBtn');
+        const originalText = refreshBtn.innerHTML;
+        
+        try {
+            // Afficher l'état de chargement
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Actualisation...';
+            refreshBtn.disabled = true;
+            
+            const response = await fetch('refresh_week_data.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Afficher un message de succès
+                showNotification('success', result.message);
+                
+                // Recharger la page après un court délai pour voir les nouvelles données
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showNotification('error', result.message || 'Erreur lors de l\'actualisation');
+            }
+            
+        } catch (error) {
+            console.error('Erreur:', error);
+            showNotification('error', 'Erreur de connexion lors de l\'actualisation');
+        } finally {
+            // Restaurer le bouton
+            refreshBtn.innerHTML = originalText;
+            refreshBtn.disabled = false;
+        }
+    }
+    
+    // Fonction pour afficher les notifications
+    function showNotification(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+        
+        const notification = document.createElement('div');
+        notification.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas ${icon} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Supprimer automatiquement après 5 secondes
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    // Fonction pour basculer l'actualisation automatique
+    function toggleAutoRefresh() {
+        const toggleBtn = document.getElementById('autoRefreshToggle');
+        const statusSpan = document.getElementById('autoRefreshStatus');
+        
+        if (isAutoRefreshEnabled) {
+            // Désactiver l'actualisation automatique
+            clearInterval(autoRefreshInterval);
+            autoRefreshInterval = null;
+            isAutoRefreshEnabled = false;
+            statusSpan.textContent = 'OFF';
+            toggleBtn.classList.remove('btn-success');
+            toggleBtn.classList.add('btn-outline-secondary');
+            showNotification('success', 'Actualisation automatique désactivée');
+        } else {
+            // Activer l'actualisation automatique (toutes les 30 secondes)
+            autoRefreshInterval = setInterval(refreshWeekData, 30000);
+            isAutoRefreshEnabled = true;
+            statusSpan.textContent = 'ON (30s)';
+            toggleBtn.classList.remove('btn-outline-secondary');
+            toggleBtn.classList.add('btn-success');
+            showNotification('success', 'Actualisation automatique activée (toutes les 30 secondes)');
+        }
+    }
+    
+    // Événements
+    document.addEventListener('DOMContentLoaded', function() {
+        // Bouton d'actualisation manuelle
+        document.getElementById('refreshDataBtn').addEventListener('click', refreshWeekData);
+        
+        // Bouton d'actualisation automatique
+        document.getElementById('autoRefreshToggle').addEventListener('click', toggleAutoRefresh);
+        
+        // Nettoyer l'intervalle quand on quitte la page
+        window.addEventListener('beforeunload', function() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+    });
+    </script>
 </body>
 </html>
