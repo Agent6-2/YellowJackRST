@@ -126,9 +126,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link <?php echo $current_page === 'taxes.php' ? 'active' : ''; ?>" href="taxes.php">
-                    <i class="fas fa-calculator"></i>
-                    Impôts
+                <a class="nav-link <?php echo $current_page === 'week_management.php' ? 'active' : ''; ?>" href="week_management.php">
+                    <i class="fas fa-calendar-week"></i>
+                    Gestion des Semaines
                 </a>
             </li>
             <?php endif; ?>
@@ -188,14 +188,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Discord
                 </a>
             </li>
-            <?php if ($user['role'] === 'Patron'): ?>
-            <li class="nav-item">
-                <a class="nav-link <?php echo $current_page === 'week_management.php' ? 'active' : ''; ?>" href="week_management.php">
-                    <i class="fas fa-calendar-week"></i>
-                    Gestion des Semaines
-                </a>
-            </li>
-            <?php endif; ?>
+
         </ul>
         <?php endif; ?>
         
