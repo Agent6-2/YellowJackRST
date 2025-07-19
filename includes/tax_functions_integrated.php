@@ -6,7 +6,8 @@
  * @version 1.0
  */
 
-require_once 'functions.php';
+require_once __DIR__ . '/../config/database.php';
+require_once 'week_functions.php';
 
 /**
  * Calcule les impôts selon le système de tranches
@@ -15,7 +16,7 @@ require_once 'functions.php';
  * @return array Résultat du calcul avec détails
  */
 function calculateTax($revenue) {
-    global $db;
+    $db = getDB();
     
     // Récupérer les tranches d'impôts
     $stmt = $db->prepare("SELECT * FROM tax_brackets ORDER BY min_revenue ASC");
@@ -85,7 +86,7 @@ function calculateTax($revenue) {
  * @return array Résultat de l'opération
  */
 function calculateAndUpdateWeekTax($weekId) {
-    global $db;
+    $db = getDB();
     
     try {
         // Récupérer les revenus de la semaine
@@ -133,7 +134,7 @@ function calculateAndUpdateWeekTax($weekId) {
  * @return array Résultat de l'opération
  */
 function finalizeWeekTax($weekId) {
-    global $db;
+    $db = getDB();
     
     try {
         $stmt = $db->prepare("UPDATE weeks SET tax_finalized = 1 WHERE id = ?");
@@ -159,7 +160,7 @@ function finalizeWeekTax($weekId) {
  * @return array Résultat de l'opération
  */
 function finalizeWeekAndCreateNewWithTax($userId) {
-    global $db;
+    $db = getDB();
     
     try {
         $db->beginTransaction();
