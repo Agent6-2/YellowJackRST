@@ -28,6 +28,11 @@ if (!$auth->hasPermission('Patron')) {
 
 $currentUser = $auth->getCurrentUser();
 
+// Obtenir les données d'abord
+$activeWeek = getActiveWeekNew();
+$allWeeks = getAllWeeks();
+$activeWeekStats = getActiveWeekStats();
+
 // Messages
 $success_message = '';
 $error_message = '';
@@ -40,6 +45,8 @@ if ($_POST) {
             $result = calculateAndUpdateWeekTax($activeWeek['id']);
             if ($result['success']) {
                 $success_message = 'Impôts calculés avec succès pour la semaine ' . $activeWeek['week_number'];
+                // Recharger les données après le calcul
+                $activeWeek = getActiveWeekNew();
             } else {
                 $error_message = $result['message'];
             }
@@ -53,6 +60,10 @@ if ($_POST) {
             
             if ($result['success']) {
                 $success_message = $result['message'];
+                // Recharger les données après la finalisation
+                $activeWeek = getActiveWeekNew();
+                $allWeeks = getAllWeeks();
+                $activeWeekStats = getActiveWeekStats();
             } else {
                 $error_message = $result['message'];
             }
@@ -61,11 +72,6 @@ if ($_POST) {
         }
     }
 }
-
-// Obtenir les données
-$activeWeek = getActiveWeekNew();
-$allWeeks = getAllWeeks();
-$activeWeekStats = getActiveWeekStats();
 
 ?>
 <!DOCTYPE html>
