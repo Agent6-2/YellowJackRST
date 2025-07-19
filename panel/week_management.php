@@ -11,20 +11,21 @@ require_once '../includes/auth.php';
 require_once '../includes/week_functions.php';
 require_once '../config/database.php';
 
-// Vérifier que l'utilisateur est connecté
-if (!isset($_SESSION['user_id'])) {
+$db = getDB();
+$auth = new Auth($db);
+
+// Vérifier que l'utilisateur est connecté et a les permissions
+if (!$auth->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
 
-$user = $_SESSION;
-$db = getDB();
-
-// Vérifier les permissions (seul le patron peut accéder)
-if ($user['role'] !== 'Patron') {
+if (!$auth->hasPermission('Patron')) {
     header('Location: dashboard.php?error=access_denied');
     exit;
 }
+
+$currentUser = $auth->getCurrentUser();
 
 // Messages
 $success_message = '';
@@ -41,7 +42,7 @@ if ($_POST) {
         } elseif (strtotime($new_week_start) >= strtotime($new_week_end)) {
             $error_message = 'La date de début doit être antérieure à la date de fin.';
         } else {
-            $result = finalizeWeekAndCreateNew($user['id'], $new_week_start, $new_week_end);
+            $result = finalizeWeekAndCreateNew($currentUser['id'], $new_week_start, $new_week_end);
             
             if ($result['success']) {
                 $success_message = $result['message'];
