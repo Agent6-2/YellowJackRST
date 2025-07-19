@@ -82,9 +82,9 @@ function calculateAndUpdateWeekTax($weekId) {
     $db = getDB();
     
     try {
-        // Récupérer les revenus de la semaine (seulement le CA, pas le nettoyage)
+        // Récupérer les revenus de la semaine (CA + ménage)
         $weekStats = calculateWeekStats($weekId);
-        $totalRevenue = $weekStats['total_sales_revenue']; // Seulement le chiffre d'affaires
+        $totalRevenue = $weekStats['total_revenue']; // CA + ménage
         
         // Calculer les impôts
         $taxResult = calculateTax($totalRevenue);
