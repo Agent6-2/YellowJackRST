@@ -9,6 +9,7 @@
 
 require_once '../includes/auth.php';
 require_once '../includes/week_functions.php';
+require_once '../includes/tax_functions_integrated.php';
 require_once '../config/database.php';
 
 $db = getDB();
@@ -33,22 +34,30 @@ $error_message = '';
 
 // Traitement des actions
 if ($_POST) {
-    if (isset($_POST['finalize_week'])) {
-        $new_week_start = $_POST['new_week_start'] ?? '';
-        $new_week_end = $_POST['new_week_end'] ?? '';
-        
-        if (empty($new_week_start) || empty($new_week_end)) {
-            $error_message = 'Les dates de début et de fin de la nouvelle semaine sont obligatoires.';
-        } elseif (strtotime($new_week_start) >= strtotime($new_week_end)) {
-            $error_message = 'La date de début doit être antérieure à la date de fin.';
+    if (isset($_POST['calculate_taxes'])) {
+        // Calculer les impôts pour la semaine active
+        if ($activeWeek) {
+            $result = calculateAndUpdateWeekTax($activeWeek['id']);
+            if ($result['success']) {
+                $success_message = 'Impôts calculés avec succès pour la semaine ' . $activeWeek['week_number'];
+            } else {
+                $error_message = $result['message'];
+            }
         } else {
-            $result = finalizeWeekAndCreateNew($currentUser['id'], $new_week_start, $new_week_end);
+            $error_message = 'Aucune semaine active trouvée.';
+        }
+    } elseif (isset($_POST['finalize_week'])) {
+        // Finaliser la semaine avec calcul automatique des impôts
+        if ($activeWeek) {
+            $result = finalizeWeekAndCreateNewWithTax($currentUser['id']);
             
             if ($result['success']) {
                 $success_message = $result['message'];
             } else {
                 $error_message = $result['message'];
             }
+        } else {
+            $error_message = 'Aucune semaine active trouvée.';
         }
     }
 }
@@ -187,9 +196,95 @@ $activeWeekStats = getActiveWeekStats();
                                     </div>
                                 </div>
                                 
+                                <!-- Section Impôts -->
+                                <hr>
+                                <h6><i class="fas fa-calculator me-2"></i>Gestion des Impôts</h6>
+                                <?php
+                                // Récupérer les données d'impôts de la semaine active
+                                $stmt = $db->prepare("SELECT tax_amount, effective_tax_rate, tax_breakdown, tax_calculated_at, tax_finalized FROM weeks WHERE id = ?");
+                                $stmt->execute([$activeWeek['id']]);
+                                $taxData = $stmt->fetch();
+                                ?>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-primary"><?php echo number_format($taxData['tax_amount'] ?? 0, 2); ?>$</h5>
+                                                <p class="card-text">Impôts Calculés</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title text-info"><?php echo number_format($taxData['effective_tax_rate'] ?? 0, 2); ?>%</h5>
+                                                <p class="card-text">Taux Effectif</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-center">
+                                            <div class="card-body">
+                                                <h5 class="card-title <?php echo ($taxData['tax_finalized'] ?? false) ? 'text-success' : 'text-warning'; ?>">
+                                                    <?php echo ($taxData['tax_finalized'] ?? false) ? 'Finalisés' : 'En attente'; ?>
+                                                </h5>
+                                                <p class="card-text">Statut Impôts</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <?php if ($taxData['tax_breakdown']): ?>
+                                <div class="mb-3">
+                                    <h6><i class="fas fa-list me-2"></i>Détail du calcul par tranche</h6>
+                                    <?php 
+                                    $breakdown = json_decode($taxData['tax_breakdown'], true);
+                                    if ($breakdown):
+                                        foreach ($breakdown as $bracket): 
+                                    ?>
+                                        <div class="alert alert-light">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <strong>Tranche :</strong> 
+                                                    <?php echo number_format($bracket['min_revenue'], 0, ',', ' '); ?>$ - 
+                                                    <?php echo $bracket['max_revenue'] ? number_format($bracket['max_revenue'], 0, ',', ' ') . '$' : '∞'; ?>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <strong>Taux :</strong> <?php echo $bracket['tax_rate']; ?>%
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <strong>Montant imposable :</strong> <?php echo number_format($bracket['taxable_amount'], 2, ',', ' '); ?>$
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <strong>Impôt :</strong> <?php echo number_format($bracket['tax_amount'], 2, ',', ' '); ?>$
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php 
+                                        endforeach;
+                                    endif;
+                                    ?>
+                                </div>
+                                <?php endif; ?>
+                                
+                                <!-- Actions Impôts -->
+                                <div class="mb-3">
+                                    <form method="POST" class="d-inline">
+                                        <button type="submit" name="calculate_taxes" class="btn btn-info me-2">
+                                            <i class="fas fa-calculator me-2"></i>Calculer les Impôts
+                                        </button>
+                                    </form>
+                                    
+                                    <?php if ($taxData['tax_calculated_at'] && !($taxData['tax_finalized'] ?? false)): ?>
+                                        <span class="text-muted">Derniers impôts calculés le <?php echo date('d/m/Y H:i', strtotime($taxData['tax_calculated_at'])); ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                
                                 <!-- Formulaire de finalisation -->
                                 <hr>
                                 <h6><i class="fas fa-flag-checkered me-2"></i>Finaliser la semaine et créer la suivante</h6>
+                                <p class="text-muted">La finalisation calculera automatiquement les impôts et créera la semaine suivante.</p>
                                 <form method="POST" class="row g-3">
                                     <div class="col-md-4">
                                         <label for="new_week_start" class="form-label">Début nouvelle semaine</label>
