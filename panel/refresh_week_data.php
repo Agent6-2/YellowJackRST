@@ -78,8 +78,7 @@ try {
                         total_revenue = ?,
                         total_sales_count = ?,
                         total_cleaning_revenue = ?,
-                        total_cleaning_count = ?,
-                        updated_at = NOW()
+                        total_cleaning_count = ?
                     WHERE id = ?
                 ");
                 
