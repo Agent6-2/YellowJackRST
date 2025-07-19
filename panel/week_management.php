@@ -457,10 +457,14 @@ if ($_POST) {
         const refreshBtn = document.getElementById('refreshDataBtn');
         const originalText = refreshBtn.innerHTML;
         
+        console.log('🔄 Début de l\'actualisation...');
+        
         try {
             // Afficher l'état de chargement
             refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Actualisation...';
             refreshBtn.disabled = true;
+            
+            console.log('📡 Envoi de la requête vers refresh_week_data.php...');
             
             const response = await fetch('refresh_week_data.php', {
                 method: 'POST',
@@ -469,13 +473,28 @@ if ($_POST) {
                 }
             });
             
-            const result = await response.json();
+            console.log('📨 Réponse reçue, status:', response.status);
+            console.log('📨 Headers:', response.headers);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const responseText = await response.text();
+            console.log('📄 Texte brut de la réponse:', responseText);
+            
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('❌ Erreur de parsing JSON:', parseError);
+                throw new Error('Réponse invalide du serveur: ' + responseText.substring(0, 100));
+            }
+            
+            console.log('📋 Résultat parsé:', result);
             
             if (result.success) {
-                // Afficher un message de succès
                 showNotification('success', result.message);
-                
-                // Recharger la page après un court délai pour voir les nouvelles données
                 setTimeout(() => {
                     window.location.reload();
                 }, 1500);
@@ -484,8 +503,8 @@ if ($_POST) {
             }
             
         } catch (error) {
-            console.error('Erreur:', error);
-            showNotification('error', 'Erreur de connexion lors de l\'actualisation');
+            console.error('❌ Erreur complète:', error);
+            showNotification('error', 'Erreur: ' + error.message);
         } finally {
             // Restaurer le bouton
             refreshBtn.innerHTML = originalText;

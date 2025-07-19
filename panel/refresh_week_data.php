@@ -30,6 +30,21 @@ if (!$auth->hasPermission('Patron')) {
 
 header('Content-Type: application/json');
 
+// Ajouter des logs de débogage
+error_log("[REFRESH] Script appelé - Méthode: " . $_SERVER['REQUEST_METHOD']);
+error_log("[REFRESH] Utilisateur connecté: " . ($auth->isLoggedIn() ? 'Oui' : 'Non'));
+if ($auth->isLoggedIn()) {
+    $currentUser = $auth->getCurrentUser();
+    error_log("[REFRESH] Utilisateur: " . $currentUser['first_name'] . ' ' . $currentUser['last_name']);
+}
+
+// Accepter les requêtes GET et POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Méthode non autorisée']);
+    exit;
+}
+
 try {
     $updatedWeeks = 0;
     $errors = [];
