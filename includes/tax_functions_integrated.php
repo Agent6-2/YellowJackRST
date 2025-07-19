@@ -31,46 +31,39 @@ function calculateTax($revenue) {
         ];
     }
     
-    $totalTax = 0;
-    $breakdown = [];
-    $remainingRevenue = $revenue;
-    
+    // Système de taux fixe par tranche (non progressif)
+    // Trouver la tranche correspondante au revenu total
+    $applicableBracket = null;
     foreach ($brackets as $bracket) {
-        if ($remainingRevenue <= 0) break;
-        
         $minRevenue = $bracket['min_revenue'];
         $maxRevenue = $bracket['max_revenue'];
-        $taxRate = $bracket['tax_rate'];
         
-        // Déterminer le montant imposable dans cette tranche
-        if ($revenue <= $minRevenue) {
-            continue; // Pas encore dans cette tranche
-        }
-        
-        $taxableInBracket = 0;
-        if ($maxRevenue === null || $maxRevenue == 0) {
-            // Tranche supérieure sans limite
-            $taxableInBracket = $revenue - $minRevenue;
-        } else {
-            // Tranche avec limite supérieure
-            $taxableInBracket = min($revenue, $maxRevenue) - $minRevenue;
-        }
-        
-        if ($taxableInBracket > 0) {
-            $taxInBracket = $taxableInBracket * ($taxRate / 100);
-            $totalTax += $taxInBracket;
-            
-            $breakdown[] = [
-                'min_revenue' => $minRevenue,
-                'max_revenue' => $maxRevenue,
-                'tax_rate' => $taxRate,
-                'taxable_amount' => $taxableInBracket,
-                'tax_amount' => $taxInBracket
-            ];
+        if ($revenue >= $minRevenue && ($maxRevenue === null || $revenue <= $maxRevenue)) {
+            $applicableBracket = $bracket;
+            break;
         }
     }
     
-    $effectiveRate = $revenue > 0 ? ($totalTax / $revenue) * 100 : 0;
+    if (!$applicableBracket) {
+        return [
+            'total_tax' => 0,
+            'effective_rate' => 0,
+            'breakdown' => []
+        ];
+    }
+    
+    // Calculer l'impôt avec le taux fixe de la tranche
+    $taxRate = $applicableBracket['tax_rate'];
+    $totalTax = $revenue * ($taxRate / 100);
+    $effectiveRate = $taxRate;
+    
+    $breakdown = [[
+        'min_revenue' => $applicableBracket['min_revenue'],
+        'max_revenue' => $applicableBracket['max_revenue'],
+        'tax_rate' => $taxRate,
+        'taxable_amount' => $revenue,
+        'tax_amount' => $totalTax
+    ]];
     
     return [
         'total_tax' => $totalTax,
