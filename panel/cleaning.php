@@ -114,7 +114,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $duration_data = calculateDuration($current_session['start_time'], $end_time);
                             $duration = $duration_data['total_minutes'];
                             
-                            // Récupérer le taux de ménage selon le rôle depuis les paramètres
+                            // Chaque ménage rapporte 60$ à l'entreprise
+                            $company_revenue_per_cleaning = 60;
+                            $total_company_revenue = $cleaning_count * $company_revenue_per_cleaning;
+                            
+                            // Récupérer le pourcentage de commission selon le rôle depuis les paramètres
                             $cleaning_rate_setting_key = '';
                             
                             switch ($user['role']) {
@@ -135,12 +139,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $cleaning_rate_setting_key = 'cleaning_rate_cdd'; // Par défaut CDD
                             }
                             
-                            // Récupérer le taux depuis la base de données
+                            // Récupérer le pourcentage depuis la base de données
                             $stmt_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
                             $stmt_rate->execute([$cleaning_rate_setting_key]);
-                            $user_cleaning_rate = floatval($stmt_rate->fetchColumn() ?: CLEANING_RATE);
+                            $user_cleaning_percentage = floatval($stmt_rate->fetchColumn() ?: 25); // 25% par défaut
                             
-                            $salary = $cleaning_count * $user_cleaning_rate;
+                            // Calculer le salaire de l'employé (pourcentage du revenu de l'entreprise)
+                            $salary = ($total_company_revenue * $user_cleaning_percentage) / 100;
                             
                             $stmt = $db->prepare("
                                 UPDATE cleaning_services 
@@ -196,6 +201,30 @@ $stmt = $db->prepare("
 ");
 $stmt->execute([$user['id']]);
 $recent_sessions = $stmt->fetchAll();
+
+// Récupérer le pourcentage de commission de l'utilisateur pour l'affichage
+$cleaning_rate_setting_key = '';
+switch ($user['role']) {
+    case 'CDD':
+        $cleaning_rate_setting_key = 'cleaning_rate_cdd';
+        break;
+    case 'CDI':
+        $cleaning_rate_setting_key = 'cleaning_rate_cdi';
+        break;
+    case 'Responsable':
+        $cleaning_rate_setting_key = 'cleaning_rate_responsable';
+        break;
+    case 'Patron':
+    case 'Co-patron':
+        $cleaning_rate_setting_key = 'cleaning_rate_patron';
+        break;
+    default:
+        $cleaning_rate_setting_key = 'cleaning_rate_cdd';
+}
+
+$stmt_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+$stmt_rate->execute([$cleaning_rate_setting_key]);
+$user_cleaning_percentage = floatval($stmt_rate->fetchColumn() ?: 25);
 
 $page_title = 'Gestion des Ménages';
 ?>
@@ -408,7 +437,8 @@ $page_title = 'Gestion des Ménages';
                             <label for="cleaning_count" class="form-label">Nombre de ménages effectués</label>
                             <input type="number" class="form-control" id="cleaning_count" name="cleaning_count" min="0" required>
                             <div class="form-text">
-                                Taux: <?php echo $user_cleaning_rate; ?>$ par ménage (<?php echo $user['role']; ?>)
+                                Commission: <?php echo $user_cleaning_percentage; ?>% sur 60$ par ménage (<?php echo $user['role']; ?>)
+                                <br><small class="text-muted">Salaire par ménage: <?php echo number_format((60 * $user_cleaning_percentage) / 100, 2); ?>$</small>
                             </div>
                         </div>
                         
@@ -454,8 +484,10 @@ $page_title = 'Gestion des Ménages';
         // Calcul automatique du salaire dans le modal
         document.getElementById('cleaning_count').addEventListener('input', function() {
             const count = parseInt(this.value) || 0;
-            const rate = <?php echo $user_cleaning_rate; ?>;
-            const salary = count * rate;
+            const percentage = <?php echo $user_cleaning_percentage; ?>;
+            const revenuePerCleaning = 60;
+            const salaryPerCleaning = (revenuePerCleaning * percentage) / 100;
+            const salary = count * salaryPerCleaning;
             
             // Mettre à jour l'affichage du salaire
             let salaryDisplay = document.getElementById('salary-display');
@@ -465,7 +497,7 @@ $page_title = 'Gestion des Ménages';
                 salaryDisplay.className = 'mt-2 fw-bold text-success';
                 this.parentNode.appendChild(salaryDisplay);
             }
-            salaryDisplay.textContent = 'Salaire calculé: ' + salary + '$';
+            salaryDisplay.textContent = 'Salaire calculé: ' + salary.toFixed(2) + '$';
         });
     </script>
 </body>
