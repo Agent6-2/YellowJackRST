@@ -232,13 +232,18 @@ function calculateWeekStats($week_id) {
                 if ($check_column->rowCount() > 0) {
                     $stmt = $db->prepare("
                         SELECT 
-                            COUNT(*) as total_cleaning_count,
-                            COALESCE(SUM(total_salary), 0) as total_cleaning_revenue
+                            COUNT(*) as total_cleaning_count
                         FROM cleaning_services 
                         WHERE week_id = ? AND status = 'completed'
                     ");
                     $stmt->execute([$week_id]);
-                    $cleaning_stats = $stmt->fetch();
+                    $cleaning_result = $stmt->fetch();
+                    
+                    // Calculer le CA des ménages : 60$ par ménage
+                    $cleaning_stats = [
+                        'total_cleaning_count' => $cleaning_result['total_cleaning_count'] ?? 0,
+                        'total_cleaning_revenue' => ($cleaning_result['total_cleaning_count'] ?? 0) * 60
+                    ];
                 }
             }
         } catch (Exception $e) {
