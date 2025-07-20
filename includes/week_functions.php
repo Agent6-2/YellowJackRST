@@ -232,7 +232,7 @@ function calculateWeekStats($week_id) {
                 if ($check_column->rowCount() > 0) {
                     $stmt = $db->prepare("
                         SELECT 
-                            COUNT(*) as total_cleaning_count
+                            COALESCE(SUM(cleaning_count), 0) as total_cleaning_count
                         FROM cleaning_services 
                         WHERE week_id = ? AND status = 'completed' AND user_id != 999
                     ");
