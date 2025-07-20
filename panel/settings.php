@@ -132,6 +132,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 break;
                 
+            case 'update_commissions':
+                // Récupérer tous les paramètres de commission
+                $commission_settings = [
+                    'commission_cdd_sales' => floatval($_POST['commission_cdd_sales'] ?? 0),
+                    'commission_cdi_sales' => floatval($_POST['commission_cdi_sales'] ?? 15),
+                    'commission_responsable_sales' => floatval($_POST['commission_responsable_sales'] ?? 20),
+                    'commission_patron_sales' => floatval($_POST['commission_patron_sales'] ?? 25),
+                    'cleaning_rate_cdd' => floatval($_POST['cleaning_rate_cdd'] ?? 50),
+                    'cleaning_rate_cdi' => floatval($_POST['cleaning_rate_cdi'] ?? 60),
+                    'cleaning_rate_responsable' => floatval($_POST['cleaning_rate_responsable'] ?? 70),
+                    'cleaning_rate_patron' => floatval($_POST['cleaning_rate_patron'] ?? 80),
+                    'bonus_weekend_rate' => floatval($_POST['bonus_weekend_rate'] ?? 10),
+                    'bonus_night_rate' => floatval($_POST['bonus_night_rate'] ?? 15),
+                    'enable_performance_bonus' => isset($_POST['enable_performance_bonus']) ? '1' : '0',
+                    'enable_team_bonus' => isset($_POST['enable_team_bonus']) ? '1' : '0'
+                ];
+                
+                // Validation des valeurs
+                $validation_errors = [];
+                foreach ($commission_settings as $key => $value) {
+                    if (strpos($key, 'commission_') === 0 || strpos($key, 'bonus_') === 0) {
+                        if ($value < 0 || $value > 100) {
+                            $validation_errors[] = "Le taux pour {$key} doit être entre 0 et 100%.";
+                        }
+                    } elseif (strpos($key, 'cleaning_rate_') === 0) {
+                        if ($value <= 0) {
+                            $validation_errors[] = "Le taux de ménage pour {$key} doit être supérieur à 0.";
+                        }
+                    }
+                }
+                
+                if (!empty($validation_errors)) {
+                    $error = implode('<br>', $validation_errors);
+                } else {
+                    try {
+                        $db->beginTransaction();
+                        
+                        // Mettre à jour ou insérer chaque paramètre
+                        $stmt = $db->prepare("
+                            INSERT INTO system_settings (setting_key, setting_value) 
+                            VALUES (?, ?) 
+                            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+                        ");
+                        
+                        foreach ($commission_settings as $key => $value) {
+                            $stmt->execute([$key, $value]);
+                        }
+                        
+                        $db->commit();
+                        $message = 'Configuration des commissions mise à jour avec succès !';
+                    } catch (Exception $e) {
+                        $db->rollBack();
+                        $error = 'Erreur lors de la mise à jour des commissions : ' . $e->getMessage();
+                    }
+                }
+                break;
+                
             case 'backup_database':
                 // Cette fonctionnalité nécessiterait des permissions spéciales sur le serveur
                 $message = 'Fonctionnalité de sauvegarde en cours de développement.';
@@ -298,6 +355,12 @@ $page_title = 'Configuration et Paramètres';
                         <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
                             <i class="fas fa-server me-2"></i>
                             Système
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="commissions-tab" data-bs-toggle="tab" data-bs-target="#commissions" type="button" role="tab">
+                            <i class="fas fa-percentage me-2"></i>
+                            Commissions
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -508,6 +571,197 @@ $page_title = 'Configuration et Paramètres';
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Onglet Commissions -->
+                    <div class="tab-pane fade" id="commissions" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-percentage me-2"></i>
+                                    Gestion des Commissions par Grade
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Information :</strong> Configurez les taux de commission pour les ventes et ménages selon le grade de l'employé.
+                                </div>
+                                
+                                <form method="POST">
+                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                    <input type="hidden" name="action" value="update_commissions">
+                                    
+                                    <div class="row">
+                                        <!-- Commissions Ventes -->
+                                        <div class="col-md-6">
+                                            <h6 class="text-primary mb-3">
+                                                <i class="fas fa-shopping-cart me-2"></i>
+                                                Commissions Ventes (%)
+                                            </h6>
+                                            
+                                            <div class="mb-3">
+                                                <label for="commission_cdd_sales" class="form-label">CDD</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="commission_cdd_sales" name="commission_cdd_sales" 
+                                                           value="<?php echo htmlspecialchars($settings['commission_cdd_sales'] ?? '0'); ?>" 
+                                                           step="0.01" min="0" max="100">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="commission_cdi_sales" class="form-label">CDI</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="commission_cdi_sales" name="commission_cdi_sales" 
+                                                           value="<?php echo htmlspecialchars($settings['commission_cdi_sales'] ?? '15'); ?>" 
+                                                           step="0.01" min="0" max="100">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="commission_responsable_sales" class="form-label">Responsable</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="commission_responsable_sales" name="commission_responsable_sales" 
+                                                           value="<?php echo htmlspecialchars($settings['commission_responsable_sales'] ?? '20'); ?>" 
+                                                           step="0.01" min="0" max="100">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="commission_patron_sales" class="form-label">Patron</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="commission_patron_sales" name="commission_patron_sales" 
+                                                           value="<?php echo htmlspecialchars($settings['commission_patron_sales'] ?? '25'); ?>" 
+                                                           step="0.01" min="0" max="100">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Commissions Ménages -->
+                                        <div class="col-md-6">
+                                            <h6 class="text-success mb-3">
+                                                <i class="fas fa-broom me-2"></i>
+                                                Taux Ménages ($/ménage)
+                                            </h6>
+                                            
+                                            <div class="mb-3">
+                                                <label for="cleaning_rate_cdd" class="form-label">CDD</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="cleaning_rate_cdd" name="cleaning_rate_cdd" 
+                                                           value="<?php echo htmlspecialchars($settings['cleaning_rate_cdd'] ?? '50'); ?>" 
+                                                           step="0.01" min="0.01">
+                                                    <span class="input-group-text">$</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="cleaning_rate_cdi" class="form-label">CDI</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="cleaning_rate_cdi" name="cleaning_rate_cdi" 
+                                                           value="<?php echo htmlspecialchars($settings['cleaning_rate_cdi'] ?? '60'); ?>" 
+                                                           step="0.01" min="0.01">
+                                                    <span class="input-group-text">$</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="cleaning_rate_responsable" class="form-label">Responsable</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="cleaning_rate_responsable" name="cleaning_rate_responsable" 
+                                                           value="<?php echo htmlspecialchars($settings['cleaning_rate_responsable'] ?? '70'); ?>" 
+                                                           step="0.01" min="0.01">
+                                                    <span class="input-group-text">$</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="cleaning_rate_patron" class="form-label">Patron</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="cleaning_rate_patron" name="cleaning_rate_patron" 
+                                                           value="<?php echo htmlspecialchars($settings['cleaning_rate_patron'] ?? '80'); ?>" 
+                                                           step="0.01" min="0.01">
+                                                    <span class="input-group-text">$</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Options supplémentaires -->
+                                    <hr class="my-4">
+                                    <h6 class="text-warning mb-3">
+                                        <i class="fas fa-cogs me-2"></i>
+                                        Options Supplémentaires
+                                    </h6>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="bonus_weekend_rate" class="form-label">Bonus Week-end (%)</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="bonus_weekend_rate" name="bonus_weekend_rate" 
+                                                           value="<?php echo htmlspecialchars($settings['bonus_weekend_rate'] ?? '10'); ?>" 
+                                                           step="0.01" min="0" max="100">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                                <div class="form-text">Bonus appliqué les samedi et dimanche</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="bonus_night_rate" class="form-label">Bonus Nuit (%)</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="bonus_night_rate" name="bonus_night_rate" 
+                                                           value="<?php echo htmlspecialchars($settings['bonus_night_rate'] ?? '15'); ?>" 
+                                                           step="0.01" min="0" max="100">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                                <div class="form-text">Bonus appliqué de 22h à 6h</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="enable_performance_bonus" name="enable_performance_bonus" 
+                                                           <?php echo ($settings['enable_performance_bonus'] ?? '1') == '1' ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="enable_performance_bonus">
+                                                        Activer les bonus de performance
+                                                    </label>
+                                                </div>
+                                                <div class="form-text">Bonus automatiques basés sur les objectifs</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="enable_team_bonus" name="enable_team_bonus" 
+                                                           <?php echo ($settings['enable_team_bonus'] ?? '0') == '1' ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="enable_team_bonus">
+                                                        Activer les bonus d'équipe
+                                                    </label>
+                                                </div>
+                                                <div class="form-text">Bonus partagés selon les performances globales</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>
+                                            Sauvegarder les Commissions
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
