@@ -26,6 +26,30 @@ if (!defined('CLEANING_RATE')) {
     define('CLEANING_RATE', floatval($cleaning_rate_setting ?: 60));
 }
 
+// Récupérer le taux de ménage spécifique à l'utilisateur
+$user_cleaning_rate_key = '';
+switch ($user['role']) {
+    case 'CDD':
+        $user_cleaning_rate_key = 'cleaning_rate_cdd';
+        break;
+    case 'CDI':
+        $user_cleaning_rate_key = 'cleaning_rate_cdi';
+        break;
+    case 'Responsable':
+        $user_cleaning_rate_key = 'cleaning_rate_responsable';
+        break;
+    case 'Patron':
+    case 'Co-patron':
+        $user_cleaning_rate_key = 'cleaning_rate_patron';
+        break;
+    default:
+        $user_cleaning_rate_key = 'cleaning_rate_cdd';
+}
+
+$stmt_user_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+$stmt_user_rate->execute([$user_cleaning_rate_key]);
+$user_cleaning_rate = floatval($stmt_user_rate->fetchColumn() ?: CLEANING_RATE);
+
 // Les fonctions getCurrentDateTime() et calculateDuration() sont maintenant définies dans config/database.php
 
 $message = '';
@@ -89,7 +113,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $end_time = getCurrentDateTime();
                             $duration_data = calculateDuration($current_session['start_time'], $end_time);
                             $duration = $duration_data['total_minutes'];
-                            $salary = $cleaning_count * CLEANING_RATE;
+                            
+                            // Récupérer le taux de ménage selon le rôle depuis les paramètres
+                            $cleaning_rate_setting_key = '';
+                            
+                            switch ($user['role']) {
+                                case 'CDD':
+                                    $cleaning_rate_setting_key = 'cleaning_rate_cdd';
+                                    break;
+                                case 'CDI':
+                                    $cleaning_rate_setting_key = 'cleaning_rate_cdi';
+                                    break;
+                                case 'Responsable':
+                                    $cleaning_rate_setting_key = 'cleaning_rate_responsable';
+                                    break;
+                                case 'Patron':
+                                case 'Co-patron':
+                                    $cleaning_rate_setting_key = 'cleaning_rate_patron';
+                                    break;
+                                default:
+                                    $cleaning_rate_setting_key = 'cleaning_rate_cdd'; // Par défaut CDD
+                            }
+                            
+                            // Récupérer le taux depuis la base de données
+                            $stmt_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+                            $stmt_rate->execute([$cleaning_rate_setting_key]);
+                            $user_cleaning_rate = floatval($stmt_rate->fetchColumn() ?: CLEANING_RATE);
+                            
+                            $salary = $cleaning_count * $user_cleaning_rate;
                             
                             $stmt = $db->prepare("
                                 UPDATE cleaning_services 
@@ -357,7 +408,7 @@ $page_title = 'Gestion des Ménages';
                             <label for="cleaning_count" class="form-label">Nombre de ménages effectués</label>
                             <input type="number" class="form-control" id="cleaning_count" name="cleaning_count" min="0" required>
                             <div class="form-text">
-                                Taux: <?php echo CLEANING_RATE; ?>$ par ménage
+                                Taux: <?php echo $user_cleaning_rate; ?>$ par ménage (<?php echo $user['role']; ?>)
                             </div>
                         </div>
                         
@@ -403,7 +454,7 @@ $page_title = 'Gestion des Ménages';
         // Calcul automatique du salaire dans le modal
         document.getElementById('cleaning_count').addEventListener('input', function() {
             const count = parseInt(this.value) || 0;
-            const rate = <?php echo CLEANING_RATE; ?>;
+            const rate = <?php echo $user_cleaning_rate; ?>;
             const salary = count * rate;
             
             // Mettre à jour l'affichage du salaire

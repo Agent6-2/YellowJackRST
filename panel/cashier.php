@@ -126,16 +126,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     
                     $final_amount = $total_amount - $discount_amount;
-                    // Calcul de la commission selon le rôle de l'utilisateur
-        $commission_rate = 0;
-        if ($user['role'] === 'CDI' || $user['role'] === 'Responsable' || $user['role'] === 'Patron') {
-            $commission_rate = 20; // 20% pour CDI, Responsable et Patron
-        } else {
-            $commission_rate = 10; // 10% pour les autres rôles (CDD)
-        }
-        
-        $commission = $total_profit * ($commission_rate / 100);
                     
+                    // Récupérer le taux de commission selon le rôle depuis les paramètres
+                    $commission_rate = 0;
+                    $commission_setting_key = '';
+                    
+                    switch ($user['role']) {
+                        case 'CDD':
+                            $commission_setting_key = 'commission_cdd_sales';
+                            break;
+                        case 'CDI':
+                            $commission_setting_key = 'commission_cdi_sales';
+                            break;
+                        case 'Responsable':
+                            $commission_setting_key = 'commission_responsable_sales';
+                            break;
+                        case 'Patron':
+                        case 'Co-patron':
+                            $commission_setting_key = 'commission_patron_sales';
+                            break;
+                        default:
+                            $commission_setting_key = 'commission_cdd_sales'; // Par défaut CDD
+                    }
+                    
+                    // Récupérer le taux depuis la base de données
+                    $stmt_commission = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+                    $stmt_commission->execute([$commission_setting_key]);
+                    $commission_rate = floatval($stmt_commission->fetchColumn() ?: 0);
+                    
+                    $commission = $total_profit * ($commission_rate / 100);
+                     
                     // Créer la vente
                     $stmt = $db->prepare("
                         INSERT INTO sales (user_id, customer_id, total_amount, discount_amount, final_amount, employee_commission) 
