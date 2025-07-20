@@ -8,6 +8,7 @@
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/week_functions.php';
 
 // Vérifier l'authentification et les permissions
 requireLogin();
@@ -214,6 +215,54 @@ $stmt = $db->prepare($top_employees_query);
 $stmt->execute([$filter_year]);
 $top_employees = $stmt->fetchAll();
 
+// Récupérer la semaine active pour les statistiques
+$active_week = getActiveWeekNew($db);
+$week_id = $active_week ? $active_week['id'] : null;
+
+// Statistiques des employés avec ménages, ventes et commissions
+$employee_stats_query = "
+    SELECT 
+        u.id,
+        u.first_name,
+        u.last_name,
+        u.role,
+        -- Ménages de la semaine active
+        COALESCE(menage_stats.menage_count, 0) as menage_count,
+        COALESCE(menage_stats.menage_commission, 0) as menage_commission,
+        -- Ventes de la semaine active
+        COALESCE(sales_stats.sales_count, 0) as sales_count,
+        COALESCE(sales_stats.sales_total, 0) as sales_total,
+        COALESCE(sales_stats.sales_commission, 0) as sales_commission,
+        -- Total des commissions
+        (COALESCE(menage_stats.menage_commission, 0) + COALESCE(sales_stats.sales_commission, 0)) as total_commission
+    FROM users u
+    LEFT JOIN (
+        SELECT 
+            user_id,
+            COUNT(*) as menage_count,
+            SUM(commission_amount) as menage_commission
+        FROM menages 
+        WHERE week_id = ? AND status = 'completed'
+        GROUP BY user_id
+    ) menage_stats ON u.id = menage_stats.user_id
+    LEFT JOIN (
+        SELECT 
+            user_id,
+            COUNT(*) as sales_count,
+            SUM(total_amount) as sales_total,
+            SUM(commission_amount) as sales_commission
+        FROM sales 
+        WHERE week_id = ?
+        GROUP BY user_id
+    ) sales_stats ON u.id = sales_stats.user_id
+    WHERE u.status = 'active'
+    ORDER BY total_commission DESC, u.first_name, u.last_name
+";
+
+$stmt = $db->prepare($employee_stats_query);
+$stmt->execute([$week_id, $week_id]);
+$employee_stats = $stmt->fetchAll();
+
 $page_title = 'Gestion des Primes';
 ?>
 <!DOCTYPE html>
@@ -367,6 +416,125 @@ $page_title = 'Gestion des Primes';
                                 <?php endif; ?>
                             </div>
                         </div>
+                    </div>
+                </div>
+                
+                <!-- Statistiques des employés -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>
+                            Statistiques des employés - Semaine active
+                            <?php if ($active_week): ?>
+                                <span class="badge bg-info ms-2">
+                                    Semaine <?php echo $active_week['week_number']; ?> 
+                                    (<?php echo formatDate($active_week['start_date']); ?> - <?php echo formatDate($active_week['end_date']); ?>)
+                                </span>
+                            <?php endif; ?>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($employee_stats)): ?>
+                            <div class="text-center py-4">
+                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucun employé trouvé</h5>
+                                <p class="text-muted">Aucun employé actif dans le système.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Employé</th>
+                                            <th>Grade</th>
+                                            <th class="text-center">Ménages</th>
+                                            <th class="text-center">Commission Ménage</th>
+                                            <th class="text-center">Ventes</th>
+                                            <th class="text-center">CA Ventes</th>
+                                            <th class="text-center">Commission Vente</th>
+                                            <th class="text-center">Total Commission</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($employee_stats as $employee): ?>
+                                            <tr>
+                                                <td>
+                                                    <strong><?php echo htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']); ?></strong>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-<?php 
+                                                        echo match($employee['role']) {
+                                                            'CDD' => 'primary',
+                                                            'CDI' => 'info',
+                                                            'Responsable' => 'warning',
+                                                            'Patron' => 'danger',
+                                                            default => 'secondary'
+                                                        };
+                                                    ?>">
+                                                        <?php echo htmlspecialchars($employee['role']); ?>
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-<?php echo $employee['menage_count'] > 0 ? 'success' : 'light text-dark'; ?>">
+                                                        <?php echo number_format($employee['menage_count']); ?>
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-success"><?php echo number_format($employee['menage_commission'], 2); ?>$</strong>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-<?php echo $employee['sales_count'] > 0 ? 'info' : 'light text-dark'; ?>">
+                                                        <?php echo number_format($employee['sales_count']); ?>
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-primary"><?php echo number_format($employee['sales_total'], 2); ?>$</strong>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-info"><?php echo number_format($employee['sales_commission'], 2); ?>$</strong>
+                                                </td>
+                                                <td class="text-center">
+                                                    <strong class="text-<?php echo $employee['total_commission'] > 0 ? 'success' : 'muted'; ?>">
+                                                        <?php echo number_format($employee['total_commission'], 2); ?>$
+                                                    </strong>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="table-secondary">
+                                            <th colspan="2">TOTAUX</th>
+                                            <th class="text-center">
+                                                <?php echo number_format(array_sum(array_column($employee_stats, 'menage_count'))); ?>
+                                            </th>
+                                            <th class="text-center">
+                                                <strong class="text-success">
+                                                    <?php echo number_format(array_sum(array_column($employee_stats, 'menage_commission')), 2); ?>$
+                                                </strong>
+                                            </th>
+                                            <th class="text-center">
+                                                <?php echo number_format(array_sum(array_column($employee_stats, 'sales_count'))); ?>
+                                            </th>
+                                            <th class="text-center">
+                                                <strong class="text-primary">
+                                                    <?php echo number_format(array_sum(array_column($employee_stats, 'sales_total')), 2); ?>$
+                                                </strong>
+                                            </th>
+                                            <th class="text-center">
+                                                <strong class="text-info">
+                                                    <?php echo number_format(array_sum(array_column($employee_stats, 'sales_commission')), 2); ?>$
+                                                </strong>
+                                            </th>
+                                            <th class="text-center">
+                                                <strong class="text-success">
+                                                    <?php echo number_format(array_sum(array_column($employee_stats, 'total_commission')), 2); ?>$
+                                                </strong>
+                                            </th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 
