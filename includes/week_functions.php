@@ -234,7 +234,7 @@ function calculateWeekStats($week_id) {
                         SELECT 
                             COUNT(*) as total_cleaning_count
                         FROM cleaning_services 
-                        WHERE week_id = ? AND status = 'completed'
+                        WHERE week_id = ? AND status = 'completed' AND user_id != 999
                     ");
                     $stmt->execute([$week_id]);
                     $cleaning_result = $stmt->fetch();
