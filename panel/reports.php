@@ -8,6 +8,7 @@
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/week_functions.php';
 
 // Vérifier l'authentification et les permissions
 requireLogin();
@@ -21,6 +22,7 @@ $db = getDB();
 $period = $_GET['period'] ?? 'month';
 $custom_start = $_GET['start_date'] ?? '';
 $custom_end = $_GET['end_date'] ?? '';
+$selected_week_id = $_GET['week_id'] ?? null;
 
 // Calculer les dates selon la période
 switch ($period) {
@@ -28,6 +30,25 @@ switch ($period) {
         $start_date = date('Y-m-d 00:00:00');
         $end_date = date('Y-m-d 23:59:59');
         $period_label = 'Aujourd\'hui';
+        break;
+    case 'active_week':
+        if ($selected_week_id) {
+            $current_week = getWeekById($selected_week_id);
+        } else {
+            $current_week = getActiveWeekNew();
+        }
+        if ($current_week) {
+            $start_date = $current_week['week_start'] . ' 00:00:00';
+            $end_date = $current_week['week_end'] . ' 23:59:59';
+            $period_label = 'Semaine ' . $current_week['week_number'];
+            $week_id = $current_week['id'];
+        } else {
+            // Fallback vers semaine courante
+            $start_date = date('Y-m-d 00:00:00', strtotime('monday this week'));
+            $end_date = date('Y-m-d 23:59:59', strtotime('sunday this week'));
+            $period_label = 'Cette semaine';
+            $week_id = null;
+        }
         break;
     case 'week':
         $start_date = date('Y-m-d 00:00:00', strtotime('monday this week'));
@@ -71,34 +92,65 @@ switch ($period) {
 }
 
 // Statistiques générales
-$stats_query = "
-    SELECT 
-        COUNT(DISTINCT s.id) as total_sales,
-        COALESCE(SUM(s.total_amount), 0) as total_revenue,
-        COALESCE(SUM(s.employee_commission), 0) as total_commissions,
-        COALESCE(AVG(s.total_amount), 0) as avg_sale_amount,
-        COUNT(DISTINCT s.customer_id) as unique_customers,
-        COUNT(DISTINCT s.user_id) as active_employees
-    FROM sales s
-    WHERE s.created_at >= ? AND s.created_at < ?
-";
-$stmt = $db->prepare($stats_query);
-$stmt->execute([$start_date, $end_date]);
+if ($period === 'active_week' && isset($week_id)) {
+    $stats_query = "
+        SELECT 
+            COUNT(DISTINCT s.id) as total_sales,
+            COALESCE(SUM(s.total_amount), 0) as total_revenue,
+            COALESCE(SUM(s.employee_commission), 0) as total_commissions,
+            COALESCE(AVG(s.total_amount), 0) as avg_sale_amount,
+            COUNT(DISTINCT s.customer_id) as unique_customers,
+            COUNT(DISTINCT s.user_id) as active_employees
+        FROM sales s
+        WHERE s.week_id = ?
+    ";
+    $stmt = $db->prepare($stats_query);
+    $stmt->execute([$week_id]);
+} else {
+    $stats_query = "
+        SELECT 
+            COUNT(DISTINCT s.id) as total_sales,
+            COALESCE(SUM(s.total_amount), 0) as total_revenue,
+            COALESCE(SUM(s.employee_commission), 0) as total_commissions,
+            COALESCE(AVG(s.total_amount), 0) as avg_sale_amount,
+            COUNT(DISTINCT s.customer_id) as unique_customers,
+            COUNT(DISTINCT s.user_id) as active_employees
+        FROM sales s
+        WHERE s.created_at >= ? AND s.created_at < ?
+    ";
+    $stmt = $db->prepare($stats_query);
+    $stmt->execute([$start_date, $end_date]);
+}
 $general_stats = $stmt->fetch();
 
 // Statistiques de ménage
-$cleaning_stats_query = "
-    SELECT 
-        COUNT(*) as total_sessions,
-        COALESCE(SUM(cleaning_count), 0) as total_cleanings,
-        COALESCE(SUM(total_salary), 0) as total_cleaning_salaries,
-        COALESCE(AVG(cleaning_count), 0) as avg_cleanings_per_session,
-        COUNT(DISTINCT user_id) as cleaning_employees
-    FROM cleaning_services
-    WHERE end_time >= ? AND end_time < ?
-";
-$stmt = $db->prepare($cleaning_stats_query);
-$stmt->execute([$start_date, $end_date]);
+if ($period === 'active_week' && isset($week_id)) {
+    $cleaning_stats_query = "
+        SELECT 
+            COUNT(*) as total_sessions,
+            COALESCE(SUM(cleaning_count), 0) as total_cleanings,
+            COALESCE(SUM(total_salary), 0) as total_cleaning_salaries,
+            COALESCE(AVG(cleaning_count), 0) as avg_cleanings_per_session,
+            COUNT(DISTINCT user_id) as cleaning_employees
+        FROM cleaning_services
+        WHERE week_id = ? AND status = 'completed'
+    ";
+    $stmt = $db->prepare($cleaning_stats_query);
+    $stmt->execute([$week_id]);
+} else {
+    $cleaning_stats_query = "
+        SELECT 
+            COUNT(*) as total_sessions,
+            COALESCE(SUM(cleaning_count), 0) as total_cleanings,
+            COALESCE(SUM(total_salary), 0) as total_cleaning_salaries,
+            COALESCE(AVG(cleaning_count), 0) as avg_cleanings_per_session,
+            COUNT(DISTINCT user_id) as cleaning_employees
+        FROM cleaning_services
+        WHERE end_time >= ? AND end_time < ?
+    ";
+    $stmt = $db->prepare($cleaning_stats_query);
+    $stmt->execute([$start_date, $end_date]);
+}
 $cleaning_stats = $stmt->fetch();
 
 // Top produits vendus
@@ -142,23 +194,43 @@ $stmt->execute([$start_date, $end_date]);
 $top_sales_employees = $stmt->fetchAll();
 
 // Top employés (ménages)
-$top_cleaning_employees_query = "
-    SELECT 
-        u.first_name,
-        u.last_name,
-        u.role,
-        COUNT(cs.id) as sessions_count,
-        COALESCE(SUM(cs.cleaning_count), 0) as total_cleanings,
-        COALESCE(SUM(cs.total_salary), 0) as total_salary
-    FROM users u
-    LEFT JOIN cleaning_services cs ON u.id = cs.user_id AND cs.end_time >= ? AND cs.end_time < ?
-    WHERE u.status = 'active'
-    GROUP BY u.id, u.first_name, u.last_name, u.role
-    ORDER BY total_cleanings DESC
-    LIMIT 10
-";
-$stmt = $db->prepare($top_cleaning_employees_query);
-$stmt->execute([$start_date, $end_date]);
+if ($period === 'active_week' && isset($week_id)) {
+    $top_cleaning_employees_query = "
+        SELECT 
+            u.first_name,
+            u.last_name,
+            u.role,
+            COUNT(cs.id) as sessions_count,
+            COALESCE(SUM(cs.cleaning_count), 0) as total_cleanings,
+            COALESCE(SUM(cs.total_salary), 0) as total_salary
+        FROM users u
+        LEFT JOIN cleaning_services cs ON u.id = cs.user_id AND cs.week_id = ? AND cs.status = 'completed'
+        WHERE u.status = 'active'
+        GROUP BY u.id, u.first_name, u.last_name, u.role
+        ORDER BY total_cleanings DESC
+        LIMIT 10
+    ";
+    $stmt = $db->prepare($top_cleaning_employees_query);
+    $stmt->execute([$week_id]);
+} else {
+    $top_cleaning_employees_query = "
+        SELECT 
+            u.first_name,
+            u.last_name,
+            u.role,
+            COUNT(cs.id) as sessions_count,
+            COALESCE(SUM(cs.cleaning_count), 0) as total_cleanings,
+            COALESCE(SUM(cs.total_salary), 0) as total_salary
+        FROM users u
+        LEFT JOIN cleaning_services cs ON u.id = cs.user_id AND cs.end_time >= ? AND cs.end_time < ?
+        WHERE u.status = 'active'
+        GROUP BY u.id, u.first_name, u.last_name, u.role
+        ORDER BY total_cleanings DESC
+        LIMIT 10
+    ";
+    $stmt = $db->prepare($top_cleaning_employees_query);
+    $stmt->execute([$start_date, $end_date]);
+}
 $top_cleaning_employees = $stmt->fetchAll();
 
 // Évolution des ventes (par jour)
@@ -269,11 +341,28 @@ $page_title = 'Rapports et Analyses';
                                 <label for="period" class="form-label">Période</label>
                                 <select class="form-select" id="period" name="period" onchange="toggleCustomDates()">
                                     <option value="today" <?php echo $period === 'today' ? 'selected' : ''; ?>>Aujourd'hui</option>
+                                    <option value="active_week" <?php echo $period === 'active_week' ? 'selected' : ''; ?>>Semaine active</option>
                                     <option value="week" <?php echo $period === 'week' ? 'selected' : ''; ?>>Cette semaine</option>
                                     <option value="month" <?php echo $period === 'month' ? 'selected' : ''; ?>>Ce mois</option>
                                     <option value="quarter" <?php echo $period === 'quarter' ? 'selected' : ''; ?>>Ce trimestre</option>
                                     <option value="year" <?php echo $period === 'year' ? 'selected' : ''; ?>>Cette année</option>
                                     <option value="custom" <?php echo $period === 'custom' ? 'selected' : ''; ?>>Période personnalisée</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3" id="week_selector" style="display: <?php echo $period === 'active_week' ? 'block' : 'none'; ?>">
+                                <label for="week_id" class="form-label">Semaine</label>
+                                <select class="form-select" id="week_id" name="week_id">
+                                    <?php
+                                    $all_weeks = getAllWeeks();
+                                    foreach ($all_weeks as $week) {
+                                        $selected = (isset($selected_week_id) && $week['id'] == $selected_week_id) ? 'selected' : '';
+                                        if (!isset($selected_week_id) && $week['is_active']) $selected = 'selected';
+                                        echo "<option value='{$week['id']}' {$selected}>";
+                                        echo "Semaine {$week['week_number']} (" . date('d/m/Y', strtotime($week['week_start'])) . " - " . date('d/m/Y', strtotime($week['week_end'])) . ")";
+                                        if ($week['is_active']) echo " - ACTIVE";
+                                        echo "</option>";
+                                    }
+                                    ?>
                                 </select>
                             </div>
                             <div class="col-md-3" id="start_date_group" style="display: <?php echo $period === 'custom' ? 'block' : 'none'; ?>">
@@ -617,13 +706,20 @@ $page_title = 'Rapports et Analyses';
             const period = document.getElementById('period').value;
             const startGroup = document.getElementById('start_date_group');
             const endGroup = document.getElementById('end_date_group');
+            const weekSelector = document.getElementById('week_selector');
             
             if (period === 'custom') {
                 startGroup.style.display = 'block';
                 endGroup.style.display = 'block';
+                weekSelector.style.display = 'none';
+            } else if (period === 'active_week') {
+                startGroup.style.display = 'none';
+                endGroup.style.display = 'none';
+                weekSelector.style.display = 'block';
             } else {
                 startGroup.style.display = 'none';
                 endGroup.style.display = 'none';
+                weekSelector.style.display = 'none';
             }
         }
         
