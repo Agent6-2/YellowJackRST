@@ -216,7 +216,7 @@ $stmt->execute([$filter_year]);
 $top_employees = $stmt->fetchAll();
 
 // Récupérer la semaine active pour les statistiques
-$active_week = getActiveWeekNew($db);
+$active_week = getActiveWeekNew();
 $week_id = $active_week ? $active_week['id'] : null;
 
 // Statistiques des employés avec ménages, ventes et commissions
