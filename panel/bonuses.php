@@ -240,8 +240,8 @@ $employee_stats_query = "
         SELECT 
             user_id,
             COUNT(*) as menage_count,
-            SUM(commission_amount) as menage_commission
-        FROM menages 
+            SUM(total_salary) as menage_commission
+        FROM cleaning_services 
         WHERE week_id = ? AND status = 'completed'
         GROUP BY user_id
     ) menage_stats ON u.id = menage_stats.user_id
