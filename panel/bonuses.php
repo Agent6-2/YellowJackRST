@@ -463,13 +463,13 @@ $page_title = 'Gestion des Primes';
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-<?php 
-                                                        echo match($employee['role']) {
-                                                            'CDD' => 'primary',
-                                                            'CDI' => 'info',
-                                                            'Responsable' => 'warning',
-                                                            'Patron' => 'danger',
-                                                            default => 'secondary'
-                                                        };
+                                                        switch($employee['role']) {
+                                                            case 'CDD': echo 'primary'; break;
+                                                            case 'CDI': echo 'info'; break;
+                                                            case 'Responsable': echo 'warning'; break;
+                                                            case 'Patron': echo 'danger'; break;
+                                                            default: echo 'secondary'; break;
+                                                        }
                                                     ?>">
                                                         <?php echo htmlspecialchars($employee['role']); ?>
                                                     </span>
@@ -642,13 +642,13 @@ $page_title = 'Gestion des Primes';
                                                 </td>
                                                 <td>
                                                     <span class="badge bg-<?php 
-                                                        echo match($bonus['role']) {
-                                                            'CDD' => 'primary',
-                                                            'CDI' => 'info',
-                                                            'Responsable' => 'warning',
-                                                            'Patron' => 'danger',
-                                                            default => 'secondary'
-                                                        };
+                                                        switch($bonus['role']) {
+                                                            case 'CDD': echo 'primary'; break;
+                                                            case 'CDI': echo 'info'; break;
+                                                            case 'Responsable': echo 'warning'; break;
+                                                            case 'Patron': echo 'danger'; break;
+                                                            default: echo 'secondary'; break;
+                                                        }
                                                     ?>">
                                                         <?php echo htmlspecialchars($bonus['role']); ?>
                                                     </span>
