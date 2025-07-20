@@ -9,6 +9,7 @@
 
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/week_functions.php';
 requireLogin();
 
 $auth = getAuth();
@@ -23,34 +24,22 @@ if (!$auth->hasPermission('Patron')) {
 
 $page_title = 'Performances Hebdomadaires';
 
-// Fonction pour obtenir le vendredi de début de la semaine courante (vendredi à vendredi inclus)
-function getFridayOfWeek($date) {
-    $timestamp = strtotime($date);
-    $dayOfWeek = date('N', $timestamp); // 1 = Lundi, 5 = Vendredi
-    
-    if ($dayOfWeek == 5) {
-        // Si c'est vendredi, c'est le début de la semaine
-        return date('Y-m-d', $timestamp);
-    } elseif ($dayOfWeek == 6 || $dayOfWeek == 7) {
-        // Si c'est samedi ou dimanche, prendre le vendredi précédent
-        $daysToSubtract = $dayOfWeek - 5;
-        return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
-    } else {
-        // Si c'est lundi à jeudi, prendre le vendredi précédent
-    $daysToSubtract = $dayOfWeek + 2; // lundi=3, mardi=4, mercredi=5, jeudi=6 (logique vendredi-vendredi exclu)
-        return date('Y-m-d', strtotime("-$daysToSubtract days", $timestamp));
-    }
+// Obtenir la semaine active ou sélectionnée
+$selected_week_id = $_GET['week_id'] ?? null;
+if ($selected_week_id) {
+    $current_week = getWeekById($selected_week_id);
+} else {
+    $current_week = getActiveWeekNew();
 }
 
-// Fonction pour obtenir le vendredi suivant (fin de semaine)
-function getFridayAfterFriday($friday) {
-    return date('Y-m-d', strtotime('+7 days', strtotime($friday)));
+if (!$current_week) {
+    $error_message = "Aucune semaine trouvée. Veuillez créer une semaine active.";
+    $current_week = ['id' => 0, 'week_number' => 0, 'week_start' => date('Y-m-d'), 'week_end' => date('Y-m-d')];
 }
 
-// Semaine sélectionnée (par défaut la semaine courante)
-$selected_week = $_GET['week'] ?? getFridayOfWeek(date('Y-m-d'));
-$week_start = $selected_week; // Vendredi
-$week_end = getFridayAfterFriday($week_start); // Vendredi suivant
+$week_start = $current_week['week_start'];
+$week_end = $current_week['week_end'];
+$week_id = $current_week['id'];
 
 // Messages
 $success_message = '';
@@ -58,7 +47,7 @@ $error_message = '';
 
 // Gestion du message de succès après redirection
 if (isset($_GET['success']) && $_GET['success'] == '1') {
-    $success_message = "Performances calculées avec succès pour la semaine du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . " (inclus)";
+    $success_message = "Performances calculées avec succès pour la semaine " . $current_week['week_number'] . " (du " . date('d/m/Y', strtotime($week_start)) . " au " . date('d/m/Y', strtotime($week_end)) . ")";
 }
 
 // Action de calcul/recalcul des performances
@@ -82,7 +71,7 @@ if ($_POST && isset($_POST['calculate_performance'])) {
         $users = $stmt->fetchAll();
         
         foreach ($users as $employee) {
-            // Calculer les statistiques ménage (vendredi à vendredi exclu)
+            // Calculer les statistiques ménage pour la semaine spécifique
             $stmt = $db->prepare("
                 SELECT 
                     COUNT(cs.id) as total_services,
@@ -91,13 +80,13 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                     COALESCE(SUM(cs.duration_minutes), 0) / 60 as total_hours
                 FROM cleaning_services cs
                 WHERE cs.user_id = ? 
-                    AND DATE(cs.start_time) >= ? AND DATE(cs.start_time) <= ?
+                    AND cs.week_id = ?
                     AND cs.status = 'completed'
             ");
-            $stmt->execute([$employee['id'], $week_start, $week_end]);
+            $stmt->execute([$employee['id'], $week_id]);
             $cleaning_stats = $stmt->fetch();
             
-            // Calculer les statistiques ventes (vendredi à vendredi exclu)
+            // Calculer les statistiques ventes pour la semaine spécifique
             $stmt = $db->prepare("
                 SELECT 
                     COUNT(s.id) as total_ventes,
@@ -111,9 +100,9 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                     ), 0) as total_profit
                 FROM sales s
                 WHERE s.user_id = ? 
-                    AND DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+                    AND s.week_id = ?
             ");
-            $stmt->execute([$employee['id'], $week_start, $week_end]);
+            $stmt->execute([$employee['id'], $week_id]);
             $sales_stats = $stmt->fetch();
             
             // Calculer les primes
@@ -167,10 +156,10 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             // Insérer ou mettre à jour les performances
             $stmt = $db->prepare("
                 INSERT INTO weekly_performance 
-                (user_id, week_start, week_end, total_menages, total_salary_menage, total_hours_menage, 
+                (user_id, week_id, week_start, week_end, total_menages, total_salary_menage, total_hours_menage, 
                  total_ventes, total_revenue, total_commissions, prime_menage, prime_ventes, prime_totale, 
                  calculated_at, is_finalized) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)
                 ON DUPLICATE KEY UPDATE
                     total_menages = VALUES(total_menages),
                     total_salary_menage = VALUES(total_salary_menage),
@@ -188,7 +177,7 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             $is_finalized = 0;
             
             $stmt->execute([
-                $employee['id'], $week_start, $week_end,
+                $employee['id'], $week_id, $week_start, $week_end,
                 $cleaning_stats['total_menages'], $cleaning_stats['total_salary'], $cleaning_stats['total_hours'],
                 $sales_stats['total_ventes'], $sales_stats['total_revenue'], $sales_stats['total_commissions'],
                 $prime_menage, $prime_ventes, $prime_totale, $is_finalized
@@ -196,7 +185,7 @@ if ($_POST && isset($_POST['calculate_performance'])) {
         }
         
         // Redirection pour actualiser les données
-        header("Location: weekly_performance.php?week=" . urlencode($week_start) . "&success=1");
+        header("Location: weekly_performance.php?week_id=" . $week_id . "&success=1");
         exit();
         
     } catch (Exception $e) {
@@ -215,35 +204,16 @@ try {
             u.role
         FROM weekly_performance wp
         JOIN users u ON wp.user_id = u.id
-        WHERE wp.week_start = ?
+        WHERE wp.week_id = ?
         ORDER BY wp.prime_totale DESC, u.first_name ASC
     ");
-    $stmt->execute([$week_start]);
+    $stmt->execute([$week_id]);
     $performances = $stmt->fetchAll();
 } catch (Exception $e) {
     $performances = [];
 }
 
-// Récupérer les semaines disponibles pour la navigation
-$available_weeks = [];
-try {
-    $stmt = $db->prepare("
-        SELECT DISTINCT week_start 
-        FROM weekly_performance 
-        ORDER BY week_start DESC 
-        LIMIT 20
-    ");
-    $stmt->execute();
-    $available_weeks = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    
-    // Ajouter la semaine courante si elle n'existe pas
-    $current_week = getFridayOfWeek(date('Y-m-d'));
-    if (!in_array($current_week, $available_weeks)) {
-        array_unshift($available_weeks, $current_week);
-    }
-} catch (Exception $e) {
-    $available_weeks = [getFridayOfWeek(date('Y-m-d'))];
-}
+// Les semaines disponibles sont maintenant récupérées via getAllWeeks() dans le HTML
 
 // Calculer les totaux
 $totals = [
@@ -445,26 +415,25 @@ foreach ($performances as $perf) {
                 <div class="card-body">
                     <form method="GET" class="row g-3">
                         <div class="col-md-4">
-                            <label for="week" class="form-label">Semaine (début vendredi)</label>
-                            <select class="form-select" id="week" name="week" onchange="this.form.submit()">
-                                <?php foreach ($available_weeks as $week): ?>
-                                    <option value="<?php echo $week; ?>" <?php echo $week === $selected_week ? 'selected' : ''; ?>>
-                                        <?php 
-                                        $week_end_display = getFridayAfterFriday($week);
-                                        echo date('d/m/Y', strtotime($week)) . ' - ' . date('d/m/Y', strtotime($week_end_display)) . ' (inclus)';
-                                        if ($week === getFridayOfWeek(date('Y-m-d'))) {
-                                            echo ' (Semaine courante)';
-                                        }
-                                        ?>
-                                    </option>
-                                <?php endforeach; ?>
+                            <label for="week_id" class="form-label">Semaine (début vendredi)</label>
+                            <select class="form-select" id="week_id" name="week_id" onchange="this.form.submit()">
+                                <?php
+                                // Récupérer toutes les semaines disponibles
+                                $all_weeks = getAllWeeks();
+                                foreach ($all_weeks as $week) {
+                                    $selected = ($week['id'] == $week_id) ? 'selected' : '';
+                                    echo "<option value='{$week['id']}' {$selected}>";
+                                    echo "Semaine {$week['week_number']} (" . date('d/m/Y', strtotime($week['week_start'])) . " - " . date('d/m/Y', strtotime($week['week_end'])) . ")";
+                                    if ($week['is_active']) echo " - ACTIVE";
+                                    echo "</option>";
+                                }
+                                ?>
                             </select>
                         </div>
                         <div class="col-md-8">
                             <div class="alert alert-info mb-0">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Période :</strong> Du vendredi <?php echo date('d/m/Y', strtotime($week_start)); ?> 
-                                au vendredi <?php echo date('d/m/Y', strtotime($week_end)); ?> (inclus)
+                                <strong>Période :</strong> Semaine <?php echo $current_week['week_number']; ?> (<?php echo date('d/m/Y', strtotime($week_start)); ?> - <?php echo date('d/m/Y', strtotime($week_end)); ?>)
                                 <?php if (date('Y-m-d') <= $week_end): ?>
                                     <span class="badge bg-warning text-dark ms-2">En cours</span>
                                 <?php else: ?>
