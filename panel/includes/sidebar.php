@@ -118,6 +118,12 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Rapports
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $current_page === 'finances.php' ? 'active' : ''; ?>" href="finances.php">
+                    <i class="fas fa-chart-line"></i>
+                    Gestion Financière
+                </a>
+            </li>
             <?php if ($auth->hasPermission('Patron')): ?>
             <li class="nav-item">
                 <a class="nav-link <?php echo $current_page === 'weekly_performance.php' ? 'active' : ''; ?>" href="weekly_performance.php">
