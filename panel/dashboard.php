@@ -367,9 +367,17 @@ try {
                                             Mes Commissions
                                         </div>
                                         <div class="h5 mb-0 font-weight-bold text-gray-800">
-                                            <?php echo number_format($stats['sales']['commissions_total'] ?? 0, 2); ?>$
+                                            <?php 
+                                            $commissions_menage = $stats['cleaning']['total_salaire'] ?? 0;
+                                            $commissions_vente = $stats['sales']['commissions_total'] ?? 0;
+                                            $total_commissions = $commissions_menage + $commissions_vente;
+                                            echo number_format($total_commissions, 2); 
+                                            ?>$
                                         </div>
-                                        <small class="text-muted">25% du CA</small>
+                                        <small class="text-muted">
+                                            Ménage: <?php echo number_format($commissions_menage, 2); ?>$ | 
+                                            Vente: <?php echo number_format($commissions_vente, 2); ?>$
+                                        </small>
                                     </div>
                                     <div class="col-auto">
                                         <i class="fas fa-percentage fa-2x text-warning"></i>
