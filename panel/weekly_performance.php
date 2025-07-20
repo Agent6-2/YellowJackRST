@@ -122,34 +122,40 @@ if ($_POST && isset($_POST['calculate_performance'])) {
             
             // Prime ménage (différenciée par type de contrat)
             if ($cleaning_stats['total_menages'] > 0 && $cleaning_stats['total_salary'] > 0) {
-                // Calcul de la prime selon le type de contrat
-                // La prime est calculée sur le salaire ménage réel
-                $total_salary_menage = $cleaning_stats['total_salary'];
-                
-                if ($employee['role'] === 'CDD') {
-                    // CDD: 30% du salaire ménage
-                    $prime_percentage = 0.30;
-                } elseif ($employee['role'] === 'CDI') {
-                    // CDI: 35% du salaire ménage
-                    $prime_percentage = 0.35;
-                } elseif ($employee['role'] === 'Responsable') {
-                    // Responsable: 40% du salaire ménage
-                    $prime_percentage = 0.40;
-                } elseif ($employee['role'] === 'Co-patron' || $employee['role'] === 'Patron') {
-                    // Co-patron/Patron: 40% du salaire ménage
-                    $prime_percentage = 0.40;
-                } else {
-                    // Autres rôles: 30% par défaut
-                    $prime_percentage = 0.30;
+                // Récupérer le pourcentage de commission ménage depuis les paramètres système
+                $cleaning_rate_setting_key = '';
+                switch ($employee['role']) {
+                    case 'CDD':
+                        $cleaning_rate_setting_key = 'cleaning_rate_cdd';
+                        break;
+                    case 'CDI':
+                        $cleaning_rate_setting_key = 'cleaning_rate_cdi';
+                        break;
+                    case 'Responsable':
+                        $cleaning_rate_setting_key = 'cleaning_rate_responsable';
+                        break;
+                    case 'Patron':
+                    case 'Co-patron':
+                        $cleaning_rate_setting_key = 'cleaning_rate_patron';
+                        break;
+                    default:
+                        $cleaning_rate_setting_key = 'cleaning_rate_cdd';
                 }
                 
-                $prime_menage = $total_salary_menage * $prime_percentage;
+                // Récupérer le pourcentage depuis la base de données
+                $stmt_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+                $stmt_rate->execute([$cleaning_rate_setting_key]);
+                $cleaning_percentage = floatval($stmt_rate->fetchColumn() ?: 25); // Pourcentage par défaut
                 
-                // Pas de bonus - pourcentages fixes :
-                // CDD: exactement 30% du salaire ménage
-                // CDI: exactement 35% du salaire ménage
-                // Responsable: exactement 40% du salaire ménage
-                // Co-patron/Patron: exactement 40% du salaire ménage
+                // Calculer la prime basée sur le nouveau système (pourcentage de 60$ par ménage)
+                $company_revenue_per_cleaning = 60;
+                $total_company_revenue = $cleaning_stats['total_menages'] * $company_revenue_per_cleaning;
+                $prime_percentage = $cleaning_percentage / 100; // Convertir en décimal
+                
+                // Calcul de la prime basée sur le revenu de l'entreprise (60$ par ménage)
+                $prime_menage = $total_company_revenue * $prime_percentage;
+                
+                // Note: $cleaning_stats['total_salary'] contient déjà le salaire calculé selon le nouveau système
             }
             
             // Prime ventes désactivée - les employés ne reçoivent que les commissions immédiates
