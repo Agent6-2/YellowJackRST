@@ -250,7 +250,7 @@ $employee_stats_query = "
             user_id,
             COUNT(*) as sales_count,
             SUM(total_amount) as sales_total,
-            SUM(commission_amount) as sales_commission
+            SUM(employee_commission) as sales_commission
         FROM sales 
         WHERE week_id = ?
         GROUP BY user_id
