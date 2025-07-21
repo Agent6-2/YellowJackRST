@@ -4,6 +4,17 @@ require_once '../includes/functions.php';
 require_once '../includes/week_functions.php';
 require_once '../config/database.php';
 
+// Optimisations pour la production
+if ($_SERVER['HTTP_HOST'] !== 'localhost') {
+    // Désactiver l'affichage des erreurs en production
+    ini_set('display_errors', 0);
+    error_reporting(0);
+    
+    // Headers de cache pour optimiser les performances
+    header('Cache-Control: public, max-age=300'); // 5 minutes
+    header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 300) . ' GMT');
+}
+
 $db = getDB();
 $auth = new Auth();
 
@@ -43,10 +54,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_message = "Erreur lors de l'ajout de la transaction : " . $e->getMessage();
         }
     }
+    
+    // Suppression de transaction
+    if (isset($_POST['delete_transaction'])) {
+        $transaction_id = intval($_POST['transaction_id']);
+        
+        try {
+            $stmt = $db->prepare("DELETE FROM financial_transactions WHERE id = ?");
+            $stmt->execute([$transaction_id]);
+            
+            $success_message = "Transaction supprimée avec succès !";
+        } catch (PDOException $e) {
+            $error_message = "Erreur lors de la suppression : " . $e->getMessage();
+        }
+    }
+    
+    // Modification de transaction
+    if (isset($_POST['edit_transaction'])) {
+        $transaction_id = intval($_POST['transaction_id']);
+        $type = $_POST['type'];
+        $category = $_POST['category'];
+        $amount = floatval($_POST['amount']);
+        $description = trim($_POST['description']);
+        $transaction_date = $_POST['transaction_date'];
+        
+        try {
+            $stmt = $db->prepare("
+                UPDATE financial_transactions 
+                SET type = ?, category = ?, amount = ?, description = ?, transaction_date = ?
+                WHERE id = ?
+            ");
+            $stmt->execute([$type, $category, $amount, $description, $transaction_date, $transaction_id]);
+            
+            $success_message = "Transaction modifiée avec succès !";
+        } catch (PDOException $e) {
+            $error_message = "Erreur lors de la modification : " . $e->getMessage();
+        }
+    }
 }
 
 // Récupération des données pour les graphiques et statistiques
-$period = $_GET['period'] ?? 'month';
+$period = filter_input(INPUT_GET, 'period', FILTER_SANITIZE_STRING) ?? 'month';
+$allowed_periods = ['week', 'month', 'year'];
+if (!in_array($period, $allowed_periods)) {
+    $period = 'month';
+}
+
 $start_date = '';
 $end_date = '';
 
@@ -224,9 +277,15 @@ include 'includes/header.php';
                 </h1>
                 <div class="btn-toolbar mb-2 mb-md-0">
                     <div class="btn-group me-2">
-                        <a href="?period=week" class="btn btn-sm <?php echo $period === 'week' ? 'btn-primary' : 'btn-outline-secondary'; ?>">Semaine</a>
-                        <a href="?period=month" class="btn btn-sm <?php echo $period === 'month' ? 'btn-primary' : 'btn-outline-secondary'; ?>">Mois</a>
-                        <a href="?period=year" class="btn btn-sm <?php echo $period === 'year' ? 'btn-primary' : 'btn-outline-secondary'; ?>">Année</a>
+                        <a href="?period=week" class="btn btn-sm <?php echo $period === 'week' ? 'btn-warning' : 'btn-outline-warning'; ?>">Semaine</a>
+                        <a href="?period=month" class="btn btn-sm <?php echo $period === 'month' ? 'btn-warning' : 'btn-outline-warning'; ?>">Mois</a>
+                        <a href="?period=year" class="btn btn-sm <?php echo $period === 'year' ? 'btn-warning' : 'btn-outline-warning'; ?>">Année</a>
+                    </div>
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-info" onclick="window.location.reload();">
+                            <i class="fas fa-sync-alt me-1"></i>
+                            Actualiser
+                        </button>
                     </div>
                     <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addTransactionModal">
                         <i class="fas fa-plus me-1"></i>
@@ -252,37 +311,37 @@ include 'includes/header.php';
             <!-- Tableau de bord financier -->
             <div class="row mb-4">
                 <div class="col-md-3">
-                    <div class="card text-center border-0 shadow-sm">
+                    <div class="card text-center">
                         <div class="card-body">
-                            <i class="fas fa-wallet fa-2x text-primary mb-2"></i>
-                            <h5 class="card-title"><?php echo number_format($current_balance, 2); ?>$</h5>
+                            <i class="fas fa-wallet fa-2x mb-2" style="color: var(--secondary-color);"></i>
+                            <h5 class="card-title" style="color: var(--primary-color);"><?php echo number_format($current_balance, 2); ?>$</h5>
                             <p class="card-text text-muted">Solde Actuel</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card text-center border-0 shadow-sm">
+                    <div class="card text-center">
                         <div class="card-body">
                             <i class="fas fa-arrow-up fa-2x text-success mb-2"></i>
-                            <h5 class="card-title"><?php echo number_format($period_stats['income'], 2); ?>$</h5>
+                            <h5 class="card-title text-success"><?php echo number_format($period_stats['income'], 2); ?>$</h5>
                             <p class="card-text text-muted">Entrées (<?php echo ucfirst($period); ?>)</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card text-center border-0 shadow-sm">
+                    <div class="card text-center">
                         <div class="card-body">
                             <i class="fas fa-arrow-down fa-2x text-danger mb-2"></i>
-                            <h5 class="card-title"><?php echo number_format($period_stats['expenses'], 2); ?>$</h5>
+                            <h5 class="card-title text-danger"><?php echo number_format($period_stats['expenses'], 2); ?>$</h5>
                             <p class="card-text text-muted">Sorties (<?php echo ucfirst($period); ?>)</p>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card text-center border-0 shadow-sm">
+                    <div class="card text-center">
                         <div class="card-body">
                             <i class="fas fa-chart-line fa-2x <?php echo $period_stats['net'] >= 0 ? 'text-success' : 'text-danger'; ?> mb-2"></i>
-                            <h5 class="card-title"><?php echo number_format($period_stats['net'], 2); ?>$</h5>
+                            <h5 class="card-title <?php echo $period_stats['net'] >= 0 ? 'text-success' : 'text-danger'; ?>"><?php echo number_format($period_stats['net'], 2); ?>$</h5>
                             <p class="card-text text-muted">Résultat Net</p>
                         </div>
                     </div>
@@ -361,10 +420,10 @@ include 'includes/header.php';
                                         </td>
                                         <td><?php echo htmlspecialchars($transaction['first_name'] . ' ' . $transaction['last_name']); ?></td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary" onclick="editTransaction(<?php echo $transaction['id']; ?>)">
+                                            <button class="btn btn-sm btn-warning" onclick="editTransaction(<?php echo $transaction['id']; ?>, '<?php echo htmlspecialchars($transaction['type']); ?>', '<?php echo htmlspecialchars($transaction['category']); ?>', <?php echo $transaction['amount']; ?>, '<?php echo htmlspecialchars($transaction['description']); ?>', '<?php echo $transaction['transaction_date']; ?>')" title="Modifier">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction(<?php echo $transaction['id']; ?>)">
+                                            <button class="btn btn-sm btn-danger" onclick="deleteTransaction(<?php echo $transaction['id']; ?>)" title="Supprimer">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -455,55 +514,136 @@ include 'includes/header.php';
     </div>
 </div>
 
+<!-- Modal Édition Transaction -->
+<div class="modal fade" id="editTransactionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Modifier la Transaction
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editTransactionForm">
+                <input type="hidden" name="transaction_id" id="edit_transaction_id">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_type" class="form-label">Type *</label>
+                                <select class="form-select" id="edit_type" name="type" required>
+                                    <option value="">Sélectionner...</option>
+                                    <option value="income">💰 Entrée d'argent</option>
+                                    <option value="expense">🧾 Sortie d'argent</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_category" class="form-label">Catégorie *</label>
+                                <select class="form-select" id="edit_category" name="category" required>
+                                    <option value="">Sélectionner...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_amount" class="form-label">Montant ($) *</label>
+                                <input type="number" class="form-control" id="edit_amount" name="amount" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_transaction_date" class="form-label">Date *</label>
+                                <input type="date" class="form-control" id="edit_transaction_date" name="transaction_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description *</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3" required placeholder="Décrivez la transaction..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" name="edit_transaction" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>
+                        Modifier
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmation Suppression -->
+<div class="modal fade" id="deleteTransactionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                    Confirmer la Suppression
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer cette transaction ?</p>
+                <p class="text-muted">Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="transaction_id" id="delete_transaction_id">
+                    <button type="submit" name="delete_transaction" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>
+                        Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Gestion des catégories dynamiques
-document.getElementById('type').addEventListener('change', function() {
-    const categorySelect = document.getElementById('category');
-    const type = this.value;
-    
+// Configuration des catégories
+const categories = {
+    income: ['Ventes Bar', 'Services Ménage', 'Pourboires', 'Subventions', 'Autres Revenus'],
+    expense: ['Achats Marchandises', 'Salaires', 'Primes', 'Loyer', 'Électricité', 'Eau', 'Internet', 'Assurances', 'Maintenance', 'Marketing', 'Autres Dépenses']
+};
+
+// Fonction pour remplir les catégories
+function populateCategories(typeSelect, categorySelect) {
+    const type = typeSelect.value;
     categorySelect.innerHTML = '<option value="">Sélectionner...</option>';
     
-    if (type === 'income') {
-        const incomeCategories = [
-            'Ventes Bar',
-            'Services Ménage',
-            'Pourboires',
-            'Subventions',
-            'Autres Revenus'
-        ];
-        
-        incomeCategories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            categorySelect.appendChild(option);
-        });
-    } else if (type === 'expense') {
-        const expenseCategories = [
-            'Achats Marchandises',
-            'Salaires',
-            'Primes',
-            'Loyer',
-            'Électricité',
-            'Eau',
-            'Internet',
-            'Assurances',
-            'Maintenance',
-            'Marketing',
-            'Autres Dépenses'
-        ];
-        
-        expenseCategories.forEach(category => {
+    if (categories[type]) {
+        categories[type].forEach(category => {
             const option = document.createElement('option');
             option.value = category;
             option.textContent = category;
             categorySelect.appendChild(option);
         });
     }
+}
+
+// Gestion des catégories pour le modal d'ajout
+document.getElementById('type').addEventListener('change', function() {
+    populateCategories(this, document.getElementById('category'));
 });
 
-// Graphique d'évolution du solde
+// Gestion des catégories pour le modal d'édition
+document.getElementById('edit_type').addEventListener('change', function() {
+    populateCategories(this, document.getElementById('edit_category'));
+});
+
+// Graphique d'évolution du solde - Style Western
 const balanceCtx = document.getElementById('balanceChart').getContext('2d');
 const balanceChart = new Chart(balanceCtx, {
     type: 'line',
@@ -512,14 +652,18 @@ const balanceChart = new Chart(balanceCtx, {
         datasets: [{
             label: 'Évolution du Solde',
             data: <?php echo json_encode(array_column($chart_data, 'daily_change')); ?>,
-            borderColor: 'rgb(75, 192, 192)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderColor: '#DAA520',
+            backgroundColor: 'rgba(218, 165, 32, 0.2)',
+            pointBackgroundColor: '#8B4513',
+            pointBorderColor: '#DAA520',
+            pointBorderWidth: 2,
             tension: 0.1,
             fill: true
         }]
     },
     options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: {
                 display: false
@@ -528,17 +672,29 @@ const balanceChart = new Chart(balanceCtx, {
         scales: {
             y: {
                 beginAtZero: true,
+                grid: {
+                    color: 'rgba(139, 69, 19, 0.1)'
+                },
                 ticks: {
+                    color: '#8B4513',
                     callback: function(value) {
                         return value + '$';
                     }
+                }
+            },
+            x: {
+                grid: {
+                    color: 'rgba(139, 69, 19, 0.1)'
+                },
+                ticks: {
+                    color: '#8B4513'
                 }
             }
         }
     }
 });
 
-// Graphique de répartition
+// Graphique de répartition - Style Western
 const distributionCtx = document.getElementById('distributionChart').getContext('2d');
 const distributionChart = new Chart(distributionCtx, {
     type: 'doughnut',
@@ -547,38 +703,89 @@ const distributionChart = new Chart(distributionCtx, {
         datasets: [{
             data: [<?php echo $period_stats['income']; ?>, <?php echo $period_stats['expenses']; ?>],
             backgroundColor: [
-                'rgba(75, 192, 192, 0.8)',
-                'rgba(255, 99, 132, 0.8)'
+                'rgba(218, 165, 32, 0.8)',
+                'rgba(220, 20, 60, 0.8)'
             ],
             borderColor: [
-                'rgb(75, 192, 192)',
-                'rgb(255, 99, 132)'
+                '#DAA520',
+                '#DC143C'
             ],
-            borderWidth: 2
+            borderWidth: 3
         }]
     },
     options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: {
-                position: 'bottom'
+                position: 'bottom',
+                labels: {
+                    color: '#8B4513',
+                    font: {
+                        weight: 'bold'
+                    }
+                }
             }
         }
     }
 });
 
 // Fonctions pour les actions sur les transactions
-function editTransaction(id) {
-    // TODO: Implémenter l'édition
-    alert('Fonctionnalité d\'édition à venir');
+function editTransaction(id, type, category, amount, description, date) {
+    // Remplir le modal d'édition
+    document.getElementById('edit_transaction_id').value = id;
+    document.getElementById('edit_type').value = type;
+    document.getElementById('edit_amount').value = amount;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('edit_transaction_date').value = date;
+    
+    // Remplir les catégories selon le type
+    populateCategories(document.getElementById('edit_type'), document.getElementById('edit_category'));
+    
+    // Sélectionner la catégorie actuelle après un court délai
+    setTimeout(() => {
+        document.getElementById('edit_category').value = category;
+    }, 100);
+    
+    // Afficher le modal
+    const modal = new bootstrap.Modal(document.getElementById('editTransactionModal'));
+    modal.show();
 }
 
 function deleteTransaction(id) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) {
-        // TODO: Implémenter la suppression
-        alert('Fonctionnalité de suppression à venir');
-    }
+    // Remplir l'ID dans le modal de suppression
+    document.getElementById('delete_transaction_id').value = id;
+    
+    // Afficher le modal de confirmation
+    const modal = new bootstrap.Modal(document.getElementById('deleteTransactionModal'));
+    modal.show();
 }
+
+// Optimisations pour la production
+document.addEventListener('DOMContentLoaded', function() {
+    // Désactiver les logs en production
+    if (window.location.hostname !== 'localhost') {
+        console.log = function() {};
+        console.warn = function() {};
+        console.error = function() {};
+    }
+    
+    // Précharger les modals pour de meilleures performances
+    const modals = ['addTransactionModal', 'editTransactionModal', 'deleteTransactionModal'];
+    modals.forEach(modalId => {
+        const modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            new bootstrap.Modal(modalElement, { backdrop: 'static' });
+        }
+    });
+    
+    // Auto-refresh toutes les 5 minutes en production
+    if (window.location.hostname !== 'localhost') {
+        setInterval(() => {
+            window.location.reload();
+        }, 300000); // 5 minutes
+    }
+});
 </script>
 
 <?php include 'includes/footer.php'; ?>
