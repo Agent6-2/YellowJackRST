@@ -20,7 +20,6 @@ if (!$auth->canManageEmployees()) {
 
 $user = $auth->getCurrentUser();
 $current_page = 'finances.php';
-$page_title = 'Gestion Financière';
 
 // Traitement des formulaires
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
