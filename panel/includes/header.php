@@ -6,15 +6,69 @@
  * @version 1.0
  */
 
-if (!isset($auth)) {
-    require_once '../includes/auth.php';
-    $auth = getAuth();
+require_once '../../includes/auth.php';
+
+// Vérifier l'authentification
+$auth = new Auth();
+if (!$auth->isLoggedIn()) {
+    header('Location: ../login.php');
+    exit;
 }
 
-if (!isset($user)) {
-    $user = $auth->getCurrentUser();
-}
+$user = $auth->getCurrentUser();
 ?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo isset($page_title) ? $page_title . ' - ' : ''; ?>Le Yellowjack - Panel</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- CSS personnalisé -->
+    <link href="../assets/css/panel.css" rel="stylesheet">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    
+    <style>
+        .navbar {
+            background-color: #1a1a1a !important;
+        }
+        .sidebar {
+            background-color: #2c2c2c;
+            min-height: 100vh;
+        }
+        .sidebar .nav-link {
+            color: #ffffff;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            margin: 0.125rem 0;
+        }
+        .sidebar .nav-link:hover {
+            background-color: #3c3c3c;
+            color: #ffffff;
+        }
+        .sidebar .nav-link.active {
+            background-color: #ffc107;
+            color: #000000;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .table th {
+            border-top: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
 <nav class="navbar navbar-dark sticky-top flex-md-nowrap p-0 shadow">
     <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="dashboard.php">
         <i class="fas fa-glass-whiskey me-2"></i>

@@ -7,8 +7,8 @@
  */
 
 if (!isset($auth)) {
-    require_once '../includes/auth.php';
-    $auth = getAuth();
+    require_once '../../includes/auth.php';
+    $auth = new Auth();
 }
 
 if (!isset($user)) {
