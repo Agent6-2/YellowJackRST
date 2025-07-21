@@ -1,15 +1,21 @@
 /* Panel CSS - Le Yellowjack */
 
-/* Variables CSS */
+/* Variables CSS - Thème Western Original */
 :root {
-    --primary-color: #007bff;
-    --secondary-color: #6c757d;
-    --success-color: #28a745;
-    --danger-color: #dc3545;
-    --warning-color: #ffc107;
-    --info-color: #17a2b8;
-    --light-color: #f8f9fa;
-    --dark-color: #343a40;
+    --primary-color: #8B4513; /* Brun western */
+    --secondary-color: #DAA520; /* Or/Jaune */
+    --accent-color: #CD853F; /* Beige sable */
+    --dark-color: #2F1B14; /* Brun foncé */
+    --light-color: #F5DEB3; /* Beige clair */
+    --success-color: #228B22;
+    --danger-color: #DC143C;
+    --warning-color: #DAA520;
+    --info-color: #4682B4;
+    --text-dark: #1a1a1a;
+    --text-light: #ffffff;
+    --border-radius: 0.5rem;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
     --sidebar-width: 250px;
 }
 
@@ -78,22 +84,32 @@ main {
     padding: 20px;
 }
 
-/* Cards */
+/* Cards - Style Western */
 .card {
-    border: none;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    transition: box-shadow 0.15s ease-in-out;
+    border: 2px solid var(--accent-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+    background: linear-gradient(145deg, #ffffff, var(--light-color));
 }
 
 .card:hover {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(139, 69, 19, 0.2);
+    border-color: var(--secondary-color);
 }
 
 .card-header {
-    background-color: transparent;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-    font-weight: 600;
+    background: linear-gradient(135deg, var(--secondary-color), #FFD700);
+    color: var(--dark-color);
+    border-bottom: 2px solid var(--primary-color);
+    font-weight: 700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.card-body {
+    padding: 1.5rem;
+    color: var(--text-dark);
 }
 
 /* Tables */
@@ -112,11 +128,71 @@ main {
     background-color: rgba(0, 123, 255, 0.05);
 }
 
-/* Buttons */
+/* Buttons - Style Western */
 .btn {
-    border-radius: 0.375rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
+    border: 2px solid var(--primary-color);
+    color: var(--text-light);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(45deg, var(--accent-color), var(--primary-color));
+    border-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(45deg, var(--success-color), #32CD32);
+    border-color: var(--success-color);
+}
+
+.btn-danger {
+    background: linear-gradient(45deg, var(--danger-color), #FF6347);
+    border-color: var(--danger-color);
+}
+
+.btn-warning {
+    background: linear-gradient(45deg, var(--secondary-color), #FFD700);
+    border: 2px solid var(--secondary-color);
+    color: var(--dark-color);
+    font-weight: 700;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(45deg, #FFD700, var(--secondary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(218, 165, 32, 0.4);
+}
+
+.btn-info {
+    background: linear-gradient(45deg, var(--info-color), #87CEEB);
+    border-color: var(--info-color);
 }
 
 .btn-sm {
@@ -185,6 +261,37 @@ canvas {
 /* Toast notifications */
 .toast {
     border-radius: 0.375rem;
+}
+
+/* Navigation - Style Western */
+.navbar {
+    background: linear-gradient(135deg, var(--dark-color), var(--primary-color)) !important;
+    box-shadow: var(--box-shadow);
+    border-bottom: 3px solid var(--secondary-color);
+}
+
+.navbar-brand {
+    color: var(--secondary-color) !important;
+    font-weight: bold;
+    font-size: 1.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    font-family: 'Rye', cursive;
+}
+
+.navbar-brand:hover {
+    color: #FFD700 !important;
+    transform: scale(1.05);
+}
+
+.navbar-nav .nav-link {
+    color: var(--light-color) !important;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--secondary-color) !important;
+    transform: translateY(-2px);
 }
 
 /* Loading states */
