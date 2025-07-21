@@ -5,6 +5,7 @@ require_once '../includes/week_functions.php';
 require_once '../config/database.php';
 
 $db = getDB();
+$auth = new Auth();
 
 // Vérifier l'authentification
 if (!$auth->isLoggedIn()) {
@@ -207,6 +208,7 @@ try {
     $chart_data = [];
 }
 
+$page_title = 'Gestion Financière';
 include 'includes/header.php';
 ?>
 
