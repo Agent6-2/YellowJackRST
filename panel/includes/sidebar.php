@@ -79,12 +79,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Clients
                 </a>
             </li>
+            <?php if ($auth->canManageEmployees()): ?>
             <li class="nav-item">
                 <a class="nav-link <?php echo $current_page === 'companies.php' ? 'active' : ''; ?>" href="companies.php">
                     <i class="fas fa-building"></i>
                     Entreprises
                 </a>
             </li>
+            <?php endif; ?>
         </ul>
         <?php endif; ?>
         
