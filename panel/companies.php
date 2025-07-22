@@ -11,7 +11,7 @@ require_once '../config/database.php';
 
 // Vérifier l'authentification et les permissions
 requireLogin();
-requirePermission('manager'); // Seuls les managers peuvent gérer les entreprises
+requirePermission('Responsable'); // Seuls les responsables ou supérieurs peuvent gérer les entreprises
 
 $auth = getAuth();
 $user = $auth->getCurrentUser();
