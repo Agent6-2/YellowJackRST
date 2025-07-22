@@ -154,6 +154,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt_commission->execute([$commission_setting_key]);
                     $commission_rate = floatval($stmt_commission->fetchColumn() ?: 0);
                     
+                    // Réduire la marge proportionnellement à la réduction si une réduction est appliquée
+                    // Cela permet de s'assurer que la commission de l'employé est également réduite
+                    // lorsqu'une réduction est accordée au client (fidélité ou entreprise)
+                    if ($discount_amount > 0 && $total_amount > 0) {
+                        // Calculer le pourcentage de réduction par rapport au total
+                        $discount_percentage = $discount_amount / $total_amount;
+                        // Réduire la marge proportionnellement
+                        $total_profit = $total_profit * (1 - $discount_percentage);
+                    }
+                    
                     $commission = $total_profit * ($commission_rate / 100);
                      
                     // Créer la vente
@@ -772,6 +782,16 @@ $page_title = 'Caisse Enregistreuse';
                     totalProfit += profit;
                 }
             });
+            
+            // Réduire la marge proportionnellement à la réduction si une réduction est appliquée
+            // Cela permet de s'assurer que la commission de l'employé est également réduite
+            // lorsqu'une réduction est accordée au client (fidélité ou entreprise)
+            if (totalDiscount > 0) {
+                // Calculer le pourcentage de réduction par rapport au sous-total
+                const discountPercentage = totalDiscount / subtotal;
+                // Réduire la marge proportionnellement
+                totalProfit = totalProfit * (1 - discountPercentage);
+            }
             
             const commission = totalProfit * (commissionRate / 100);
             
