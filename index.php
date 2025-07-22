@@ -8,14 +8,35 @@
 
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+
+// Récupérer les paramètres généraux de la vitrine
+$db = getDB();
+$stmt = $db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('bar_name', 'bar_slogan', 'bar_address', 'bar_phone', 'team_title', 'team_description', 'contact_title', 'contact_hours')");
+$stmt->execute();
+$general_settings_raw = $stmt->fetchAll();
+
+$general_settings = [];
+foreach ($general_settings_raw as $setting) {
+    $general_settings[$setting['setting_key']] = $setting['setting_value'];
+}
+
+// Valeurs par défaut si les paramètres n'existent pas
+$bar_name = $general_settings['bar_name'] ?? 'Le Yellowjack';
+$bar_slogan = $general_settings['bar_slogan'] ?? 'Bienvenue dans l\'authentique bar western de Sandy Shore';
+$bar_address = $general_settings['bar_address'] ?? 'Nord de Los Santos<br>Près de Sandy Shore';
+$bar_phone = $general_settings['bar_phone'] ?? '+1-555-YELLOW';
+$team_title = $general_settings['team_title'] ?? 'Notre Équipe';
+$team_description = $general_settings['team_description'] ?? 'Rencontrez l\'équipe passionnée du Yellowjack';
+$contact_title = $general_settings['contact_title'] ?? 'Nous Contacter';
+$contact_hours = $general_settings['contact_hours'] ?? 'Ouvert 24h/24<br>7j/7';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Yellowjack - Bar Western à Sandy Shore</title>
-    <meta name="description" content="Le Yellowjack, bar western authentique situé au nord de Los Santos près de Sandy Shore. Ambiance western, boissons de qualité et service exceptionnel.">
+    <title><?php echo htmlspecialchars($bar_name); ?> - Bar Western à Sandy Shore</title>
+    <meta name="description" content="<?php echo htmlspecialchars($bar_name); ?>, bar western authentique situé au nord de Los Santos près de Sandy Shore. Ambiance western, boissons de qualité et service exceptionnel.">
     
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -32,7 +53,7 @@ require_once 'includes/functions.php';
         <div class="container">
             <a class="navbar-brand" href="#">
                 <i class="fas fa-glass-whiskey me-2"></i>
-                Le Yellowjack
+                <?php echo htmlspecialchars($bar_name); ?>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -68,8 +89,8 @@ require_once 'includes/functions.php';
             <div class="row align-items-center min-vh-100">
                 <div class="col-lg-6">
                     <div class="hero-content">
-                        <h1 class="display-3 mb-4 western-font">Le Yellowjack</h1>
-                        <p class="lead mb-4">Bienvenue dans l'authentique bar western de Sandy Shore. Une expérience unique dans l'univers de Los Santos, où tradition et modernité se rencontrent.</p>
+                        <h1 class="display-3 mb-4 western-font"><?php echo htmlspecialchars($bar_name); ?></h1>
+                        <p class="lead mb-4"><?php echo htmlspecialchars($bar_slogan); ?>. Une expérience unique dans l'univers de Los Santos, où tradition et modernité se rencontrent.</p>
                         <div class="hero-buttons">
                             <a href="#carte" class="btn btn-warning btn-lg me-3">
                                 <i class="fas fa-utensils me-2"></i>Découvrir la Carte
@@ -283,8 +304,8 @@ require_once 'includes/functions.php';
         <div class="container">
             <div class="row">
                 <div class="col-lg-12 text-center mb-5">
-                    <h2 class="western-font">Notre Équipe</h2>
-                    <p class="lead">Rencontrez l'équipe passionnée du Yellowjack</p>
+                    <h2 class="western-font"><?php echo htmlspecialchars($team_title); ?></h2>
+                    <p class="lead"><?php echo htmlspecialchars($team_description); ?></p>
                 </div>
             </div>
             
@@ -341,7 +362,7 @@ require_once 'includes/functions.php';
         <div class="container">
             <div class="row">
                 <div class="col-lg-8 mx-auto text-center">
-                    <h2 class="western-font mb-4">Nous Contacter</h2>
+                    <h2 class="western-font mb-4"><?php echo htmlspecialchars($contact_title); ?></h2>
                     <p class="lead mb-5">Venez nous rendre visite ou contactez-nous pour plus d'informations</p>
                     
                     <div class="row">
@@ -349,7 +370,7 @@ require_once 'includes/functions.php';
                             <div class="contact-info">
                                 <i class="fas fa-map-marker-alt fa-2x text-warning mb-3"></i>
                                 <h4>Adresse</h4>
-                                <p>Nord de Los Santos<br>Près de Sandy Shore</p>
+                                <p><?php echo nl2br(htmlspecialchars($bar_address)); ?></p>
                             </div>
                         </div>
                         
@@ -357,7 +378,7 @@ require_once 'includes/functions.php';
                             <div class="contact-info">
                                 <i class="fas fa-phone fa-2x text-warning mb-3"></i>
                                 <h4>Téléphone</h4>
-                                <p>+1-555-YELLOW</p>
+                                <p><?php echo htmlspecialchars($bar_phone); ?></p>
                             </div>
                         </div>
                         
@@ -365,7 +386,7 @@ require_once 'includes/functions.php';
                             <div class="contact-info">
                                 <i class="fas fa-clock fa-2x text-warning mb-3"></i>
                                 <h4>Horaires</h4>
-                                <p>Ouvert 24h/24<br>7j/7</p>
+                                <p><?php echo nl2br(htmlspecialchars($contact_hours)); ?></p>
                             </div>
                         </div>
                     </div>
