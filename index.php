@@ -132,8 +132,60 @@ require_once 'config/database.php';
         <div class="container">
             <div class="row">
                 <div class="col-lg-12 text-center mb-5">
-                    <h2 class="western-font">Notre Carte</h2>
-                    <p class="lead">Découvrez notre sélection de boissons et plats dans l'esprit western</p>
+                    <?php
+                    // Récupérer les paramètres de la vitrine depuis la base de données
+                    $db = getConnection();
+                    $stmt = $db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('menu_title', 'menu_description', 'alcool_title', 'soft_title', 'snacks_title', 'plats_title', 'alcool_items', 'soft_items', 'snacks_items', 'plats_items')");
+                    $stmt->execute();
+                    $settings_raw = $stmt->fetchAll();
+                    
+                    $settings = [];
+                    foreach ($settings_raw as $setting) {
+                        $settings[$setting['setting_key']] = $setting['setting_value'];
+                    }
+                    
+                    // Valeurs par défaut si les paramètres n'existent pas
+                    $menu_title = $settings['menu_title'] ?? 'Notre Carte';
+                    $menu_description = $settings['menu_description'] ?? 'Découvrez notre sélection de boissons et plats dans l\'esprit western';
+                    $alcool_title = $settings['alcool_title'] ?? 'Boissons Alcoolisées';
+                    $soft_title = $settings['soft_title'] ?? 'Boissons Non-Alcoolisées';
+                    $snacks_title = $settings['snacks_title'] ?? 'Snacks';
+                    $plats_title = $settings['plats_title'] ?? 'Plats';
+                    
+                    // Récupérer les produits
+                    $alcool_items = json_decode($settings['alcool_items'] ?? '[]', true);
+                    if (empty($alcool_items)) {
+                        $alcool_items = [
+                            ['name' => 'Bière Pression', 'price' => '5', 'description' => 'Bière locale fraîche à la pression'],
+                            ['name' => 'Whiskey Premium', 'price' => '25', 'description' => 'Whiskey vieilli en fût de chêne'],
+                            ['name' => 'Vin Rouge', 'price' => '15', 'description' => 'Vin rouge de la région']
+                        ];
+                    }
+                    
+                    $soft_items = json_decode($settings['soft_items'] ?? '[]', true);
+                    if (empty($soft_items)) {
+                        $soft_items = [
+                            ['name' => 'Coca-Cola', 'price' => '3', 'description' => 'Soda classique bien frais'],
+                            ['name' => 'Eau Minérale', 'price' => '2', 'description' => 'Eau plate ou gazeuse']
+                        ];
+                    }
+                    
+                    $snacks_items = json_decode($settings['snacks_items'] ?? '[]', true);
+                    if (empty($snacks_items)) {
+                        $snacks_items = [
+                            ['name' => 'Cacahuètes Salées', 'price' => '4', 'description' => 'Parfait avec une bière']
+                        ];
+                    }
+                    
+                    $plats_items = json_decode($settings['plats_items'] ?? '[]', true);
+                    if (empty($plats_items)) {
+                        $plats_items = [
+                            ['name' => 'Burger Western', 'price' => '12', 'description' => 'Notre spécialité maison']
+                        ];
+                    }
+                    ?>
+                    <h2 class="western-font"><?php echo htmlspecialchars($menu_title); ?></h2>
+                    <p class="lead"><?php echo htmlspecialchars($menu_description); ?></p>
                 </div>
             </div>
             
@@ -143,30 +195,18 @@ require_once 'config/database.php';
                     <div class="menu-category">
                         <h3 class="text-warning mb-4">
                             <i class="fas fa-glass-whiskey me-2"></i>
-                            Boissons Alcoolisées
+                            <?php echo htmlspecialchars($alcool_title); ?>
                         </h3>
                         <div class="menu-items">
+                            <?php foreach ($alcool_items as $item): ?>
                             <div class="menu-item">
                                 <div class="d-flex justify-content-between">
-                                    <span class="item-name">Bière Pression</span>
-                                    <span class="item-price">5$</span>
+                                    <span class="item-name"><?php echo htmlspecialchars($item['name']); ?></span>
+                                    <span class="item-price"><?php echo htmlspecialchars($item['price']); ?>$</span>
                                 </div>
-                                <small class="text-muted">Bière locale fraîche à la pression</small>
+                                <small class="text-muted"><?php echo htmlspecialchars($item['description']); ?></small>
                             </div>
-                            <div class="menu-item">
-                                <div class="d-flex justify-content-between">
-                                    <span class="item-name">Whiskey Premium</span>
-                                    <span class="item-price">25$</span>
-                                </div>
-                                <small class="text-muted">Whiskey vieilli en fût de chêne</small>
-                            </div>
-                            <div class="menu-item">
-                                <div class="d-flex justify-content-between">
-                                    <span class="item-name">Vin Rouge</span>
-                                    <span class="item-price">15$</span>
-                                </div>
-                                <small class="text-muted">Vin rouge de la région</small>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
@@ -176,42 +216,39 @@ require_once 'config/database.php';
                     <div class="menu-category">
                         <h3 class="text-warning mb-4">
                             <i class="fas fa-coffee me-2"></i>
-                            Boissons Non-Alcoolisées
+                            <?php echo htmlspecialchars($soft_title); ?>
                         </h3>
                         <div class="menu-items">
+                            <?php foreach ($soft_items as $item): ?>
                             <div class="menu-item">
                                 <div class="d-flex justify-content-between">
-                                    <span class="item-name">Coca-Cola</span>
-                                    <span class="item-price">3$</span>
+                                    <span class="item-name"><?php echo htmlspecialchars($item['name']); ?></span>
+                                    <span class="item-price"><?php echo htmlspecialchars($item['price']); ?>$</span>
                                 </div>
-                                <small class="text-muted">Soda classique bien frais</small>
+                                <small class="text-muted"><?php echo htmlspecialchars($item['description']); ?></small>
                             </div>
-                            <div class="menu-item">
-                                <div class="d-flex justify-content-between">
-                                    <span class="item-name">Eau Minérale</span>
-                                    <span class="item-price">2$</span>
-                                </div>
-                                <small class="text-muted">Eau plate ou gazeuse</small>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Snacks & Plats -->
+                <!-- Snacks -->
                 <div class="col-lg-6 mb-4">
                     <div class="menu-category">
                         <h3 class="text-warning mb-4">
                             <i class="fas fa-utensils me-2"></i>
-                            Snacks
+                            <?php echo htmlspecialchars($snacks_title); ?>
                         </h3>
                         <div class="menu-items">
+                            <?php foreach ($snacks_items as $item): ?>
                             <div class="menu-item">
                                 <div class="d-flex justify-content-between">
-                                    <span class="item-name">Cacahuètes Salées</span>
-                                    <span class="item-price">4$</span>
+                                    <span class="item-name"><?php echo htmlspecialchars($item['name']); ?></span>
+                                    <span class="item-price"><?php echo htmlspecialchars($item['price']); ?>$</span>
                                 </div>
-                                <small class="text-muted">Parfait avec une bière</small>
+                                <small class="text-muted"><?php echo htmlspecialchars($item['description']); ?></small>
                             </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
@@ -221,16 +258,18 @@ require_once 'config/database.php';
                     <div class="menu-category">
                         <h3 class="text-warning mb-4">
                             <i class="fas fa-hamburger me-2"></i>
-                            Plats
+                            <?php echo htmlspecialchars($plats_title); ?>
                         </h3>
                         <div class="menu-items">
+                            <?php foreach ($plats_items as $item): ?>
                             <div class="menu-item">
                                 <div class="d-flex justify-content-between">
-                                    <span class="item-name">Burger Western</span>
-                                    <span class="item-price">12$</span>
+                                    <span class="item-name"><?php echo htmlspecialchars($item['name']); ?></span>
+                                    <span class="item-price"><?php echo htmlspecialchars($item['price']); ?>$</span>
                                 </div>
-                                <small class="text-muted">Notre spécialité maison</small>
+                                <small class="text-muted"><?php echo htmlspecialchars($item['description']); ?></small>
                             </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>

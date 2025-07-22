@@ -213,6 +213,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $vitrine_contact_title = trim($_POST['vitrine_contact_title'] ?? '');
                 $vitrine_contact_hours = trim($_POST['vitrine_contact_hours'] ?? '');
                 
+                // Récupérer les titres des catégories
+                $vitrine_alcool_title = trim($_POST['vitrine_alcool_title'] ?? '');
+                $vitrine_soft_title = trim($_POST['vitrine_soft_title'] ?? '');
+                $vitrine_snacks_title = trim($_POST['vitrine_snacks_title'] ?? '');
+                $vitrine_plats_title = trim($_POST['vitrine_plats_title'] ?? '');
+                
+                // Récupérer les produits du menu
+                $alcool_items = [];
+                $soft_items = [];
+                $snacks_items = [];
+                $plats_items = [];
+                
+                // Traitement des boissons alcoolisées
+                if (isset($_POST['alcool_items']) && is_array($_POST['alcool_items'])) {
+                    foreach ($_POST['alcool_items'] as $item) {
+                        if (!empty($item['name'])) {
+                            $alcool_items[] = [
+                                'name' => trim($item['name']),
+                                'price' => trim($item['price'] ?? '0'),
+                                'description' => trim($item['description'] ?? '')
+                            ];
+                        }
+                    }
+                }
+                
+                // Traitement des boissons non-alcoolisées
+                if (isset($_POST['soft_items']) && is_array($_POST['soft_items'])) {
+                    foreach ($_POST['soft_items'] as $item) {
+                        if (!empty($item['name'])) {
+                            $soft_items[] = [
+                                'name' => trim($item['name']),
+                                'price' => trim($item['price'] ?? '0'),
+                                'description' => trim($item['description'] ?? '')
+                            ];
+                        }
+                    }
+                }
+                
+                // Traitement des snacks
+                if (isset($_POST['snacks_items']) && is_array($_POST['snacks_items'])) {
+                    foreach ($_POST['snacks_items'] as $item) {
+                        if (!empty($item['name'])) {
+                            $snacks_items[] = [
+                                'name' => trim($item['name']),
+                                'price' => trim($item['price'] ?? '0'),
+                                'description' => trim($item['description'] ?? '')
+                            ];
+                        }
+                    }
+                }
+                
+                // Traitement des plats
+                if (isset($_POST['plats_items']) && is_array($_POST['plats_items'])) {
+                    foreach ($_POST['plats_items'] as $item) {
+                        if (!empty($item['name'])) {
+                            $plats_items[] = [
+                                'name' => trim($item['name']),
+                                'price' => trim($item['price'] ?? '0'),
+                                'description' => trim($item['description'] ?? '')
+                            ];
+                        }
+                    }
+                }
+                
                 if (empty($vitrine_bar_name)) {
                     $error = 'Le nom du bar est obligatoire pour la vitrine.';
                 } else {
@@ -230,7 +294,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'team_title' => $vitrine_team_title,
                             'team_description' => $vitrine_team_description,
                             'contact_title' => $vitrine_contact_title,
-                            'contact_hours' => $vitrine_contact_hours
+                            'contact_hours' => $vitrine_contact_hours,
+                            // Titres des catégories
+                            'alcool_title' => $vitrine_alcool_title,
+                            'soft_title' => $vitrine_soft_title,
+                            'snacks_title' => $vitrine_snacks_title,
+                            'plats_title' => $vitrine_plats_title,
+                            // Produits du menu (encodés en JSON)
+                            'alcool_items' => json_encode($alcool_items, JSON_UNESCAPED_UNICODE),
+                            'soft_items' => json_encode($soft_items, JSON_UNESCAPED_UNICODE),
+                            'snacks_items' => json_encode($snacks_items, JSON_UNESCAPED_UNICODE),
+                            'plats_items' => json_encode($plats_items, JSON_UNESCAPED_UNICODE)
                         ];
                         
                         foreach ($vitrine_settings as $key => $value) {
@@ -902,26 +976,309 @@ $page_title = 'Configuration et Paramètres';
                                     </div>
                                     
                                     <!-- Carte des boissons et plats -->
-                                    <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-utensils me-2"></i> Carte des Boissons et Plats</h6>
-                                    
-                                    <div class="row mb-4">
-                                        <div class="col-md-12">
-                                            <div class="mb-3">
-                                                <label for="vitrine_menu_title" class="form-label">Titre de la section Carte</label>
-                                                <input type="text" class="form-control" id="vitrine_menu_title" name="vitrine_menu_title" 
-                                                       value="<?php echo htmlspecialchars($settings['menu_title'] ?? 'Notre Carte'); ?>">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row mb-4">
-                                        <div class="col-md-12">
-                                            <div class="mb-3">
-                                                <label for="vitrine_menu_description" class="form-label">Description de la carte</label>
-                                                <textarea class="form-control" id="vitrine_menu_description" name="vitrine_menu_description" rows="2"><?php echo htmlspecialchars($settings['menu_description'] ?? 'Découvrez notre sélection de boissons et plats dans l\'esprit western'); ?></textarea>
-                                            </div>
-                                        </div>
-                                    </div>
+                                     <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-utensils me-2"></i> Carte des Boissons et Plats</h6>
+                                     
+                                     <div class="row mb-4">
+                                         <div class="col-md-12">
+                                             <div class="mb-3">
+                                                 <label for="vitrine_menu_title" class="form-label">Titre de la section Carte</label>
+                                                 <input type="text" class="form-control" id="vitrine_menu_title" name="vitrine_menu_title" 
+                                                        value="<?php echo htmlspecialchars($settings['menu_title'] ?? 'Notre Carte'); ?>">
+                                             </div>
+                                         </div>
+                                     </div>
+                                     
+                                     <div class="row mb-4">
+                                         <div class="col-md-12">
+                                             <div class="mb-3">
+                                                 <label for="vitrine_menu_description" class="form-label">Description de la carte</label>
+                                                 <textarea class="form-control" id="vitrine_menu_description" name="vitrine_menu_description" rows="2"><?php echo htmlspecialchars($settings['menu_description'] ?? 'Découvrez notre sélection de boissons et plats dans l\'esprit western'); ?></textarea>
+                                             </div>
+                                         </div>
+                                     </div>
+                                     
+                                     <!-- Boissons Alcoolisées -->
+                                     <div class="card mb-4">
+                                         <div class="card-header bg-light">
+                                             <h6 class="mb-0"><i class="fas fa-glass-whiskey me-2"></i> Boissons Alcoolisées</h6>
+                                         </div>
+                                         <div class="card-body">
+                                             <div class="row mb-3">
+                                                 <div class="col-md-12">
+                                                     <label for="vitrine_alcool_title" class="form-label">Titre de la catégorie</label>
+                                                     <div class="input-group">
+                                                         <span class="input-group-text"><i class="fas fa-glass-whiskey"></i></span>
+                                                         <input type="text" class="form-control" id="vitrine_alcool_title" name="vitrine_alcool_title" 
+                                                                value="<?php echo htmlspecialchars($settings['alcool_title'] ?? 'Boissons Alcoolisées'); ?>">
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                             
+                                             <!-- Produits alcoolisés -->
+                                             <div class="menu-items-editor">
+                                                 <div class="row mb-2">
+                                                     <div class="col-md-12 d-flex justify-content-between align-items-center">
+                                                         <h6>Produits</h6>
+                                                         <button type="button" class="btn btn-sm btn-outline-primary add-menu-item" data-category="alcool">
+                                                             <i class="fas fa-plus me-1"></i> Ajouter un produit
+                                                         </button>
+                                                     </div>
+                                                 </div>
+                                                 
+                                                 <div id="alcool-items-container">
+                                                     <?php 
+                                                     $alcool_items = json_decode($settings['alcool_items'] ?? '[]', true);
+                                                     if (empty($alcool_items)) {
+                                                         $alcool_items = [
+                                                             ['name' => 'Bière Pression', 'price' => '5', 'description' => 'Bière locale fraîche à la pression'],
+                                                             ['name' => 'Whiskey Premium', 'price' => '25', 'description' => 'Whiskey vieilli en fût de chêne'],
+                                                             ['name' => 'Vin Rouge', 'price' => '15', 'description' => 'Vin rouge de la région']
+                                                         ];
+                                                     }
+                                                     
+                                                     foreach ($alcool_items as $index => $item): 
+                                                     ?>
+                                                     <div class="menu-item-row border rounded p-3 mb-3">
+                                                         <div class="row">
+                                                             <div class="col-md-5 mb-2">
+                                                                 <label class="form-label">Nom du produit</label>
+                                                                 <input type="text" class="form-control" name="alcool_items[<?php echo $index; ?>][name]" 
+                                                                        value="<?php echo htmlspecialchars($item['name']); ?>">
+                                                             </div>
+                                                             <div class="col-md-2 mb-2">
+                                                                 <label class="form-label">Prix ($)</label>
+                                                                 <input type="text" class="form-control" name="alcool_items[<?php echo $index; ?>][price]" 
+                                                                        value="<?php echo htmlspecialchars($item['price']); ?>">
+                                                             </div>
+                                                             <div class="col-md-5 mb-2 d-flex align-items-end justify-content-between">
+                                                                 <div class="flex-grow-1 me-2">
+                                                                     <label class="form-label">Description</label>
+                                                                     <input type="text" class="form-control" name="alcool_items[<?php echo $index; ?>][description]" 
+                                                                            value="<?php echo htmlspecialchars($item['description']); ?>">
+                                                                 </div>
+                                                                 <button type="button" class="btn btn-outline-danger remove-menu-item">
+                                                                     <i class="fas fa-trash"></i>
+                                                                 </button>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                     <?php endforeach; ?>
+                                                 </div>
+                                                 <input type="hidden" name="alcool_items_count" id="alcool_items_count" value="<?php echo count($alcool_items); ?>">
+                                             </div>
+                                         </div>
+                                     </div>
+                                     
+                                     <!-- Boissons Non-Alcoolisées -->
+                                     <div class="card mb-4">
+                                         <div class="card-header bg-light">
+                                             <h6 class="mb-0"><i class="fas fa-coffee me-2"></i> Boissons Non-Alcoolisées</h6>
+                                         </div>
+                                         <div class="card-body">
+                                             <div class="row mb-3">
+                                                 <div class="col-md-12">
+                                                     <label for="vitrine_soft_title" class="form-label">Titre de la catégorie</label>
+                                                     <div class="input-group">
+                                                         <span class="input-group-text"><i class="fas fa-coffee"></i></span>
+                                                         <input type="text" class="form-control" id="vitrine_soft_title" name="vitrine_soft_title" 
+                                                                value="<?php echo htmlspecialchars($settings['soft_title'] ?? 'Boissons Non-Alcoolisées'); ?>">
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                             
+                                             <!-- Produits non-alcoolisés -->
+                                             <div class="menu-items-editor">
+                                                 <div class="row mb-2">
+                                                     <div class="col-md-12 d-flex justify-content-between align-items-center">
+                                                         <h6>Produits</h6>
+                                                         <button type="button" class="btn btn-sm btn-outline-primary add-menu-item" data-category="soft">
+                                                             <i class="fas fa-plus me-1"></i> Ajouter un produit
+                                                         </button>
+                                                     </div>
+                                                 </div>
+                                                 
+                                                 <div id="soft-items-container">
+                                                     <?php 
+                                                     $soft_items = json_decode($settings['soft_items'] ?? '[]', true);
+                                                     if (empty($soft_items)) {
+                                                         $soft_items = [
+                                                             ['name' => 'Coca-Cola', 'price' => '3', 'description' => 'Soda classique bien frais'],
+                                                             ['name' => 'Eau Minérale', 'price' => '2', 'description' => 'Eau plate ou gazeuse']
+                                                         ];
+                                                     }
+                                                     
+                                                     foreach ($soft_items as $index => $item): 
+                                                     ?>
+                                                     <div class="menu-item-row border rounded p-3 mb-3">
+                                                         <div class="row">
+                                                             <div class="col-md-5 mb-2">
+                                                                 <label class="form-label">Nom du produit</label>
+                                                                 <input type="text" class="form-control" name="soft_items[<?php echo $index; ?>][name]" 
+                                                                        value="<?php echo htmlspecialchars($item['name']); ?>">
+                                                             </div>
+                                                             <div class="col-md-2 mb-2">
+                                                                 <label class="form-label">Prix ($)</label>
+                                                                 <input type="text" class="form-control" name="soft_items[<?php echo $index; ?>][price]" 
+                                                                        value="<?php echo htmlspecialchars($item['price']); ?>">
+                                                             </div>
+                                                             <div class="col-md-5 mb-2 d-flex align-items-end justify-content-between">
+                                                                 <div class="flex-grow-1 me-2">
+                                                                     <label class="form-label">Description</label>
+                                                                     <input type="text" class="form-control" name="soft_items[<?php echo $index; ?>][description]" 
+                                                                            value="<?php echo htmlspecialchars($item['description']); ?>">
+                                                                 </div>
+                                                                 <button type="button" class="btn btn-outline-danger remove-menu-item">
+                                                                     <i class="fas fa-trash"></i>
+                                                                 </button>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                     <?php endforeach; ?>
+                                                 </div>
+                                                 <input type="hidden" name="soft_items_count" id="soft_items_count" value="<?php echo count($soft_items); ?>">
+                                             </div>
+                                         </div>
+                                     </div>
+                                     
+                                     <!-- Snacks -->
+                                     <div class="card mb-4">
+                                         <div class="card-header bg-light">
+                                             <h6 class="mb-0"><i class="fas fa-utensils me-2"></i> Snacks</h6>
+                                         </div>
+                                         <div class="card-body">
+                                             <div class="row mb-3">
+                                                 <div class="col-md-12">
+                                                     <label for="vitrine_snacks_title" class="form-label">Titre de la catégorie</label>
+                                                     <div class="input-group">
+                                                         <span class="input-group-text"><i class="fas fa-utensils"></i></span>
+                                                         <input type="text" class="form-control" id="vitrine_snacks_title" name="vitrine_snacks_title" 
+                                                                value="<?php echo htmlspecialchars($settings['snacks_title'] ?? 'Snacks'); ?>">
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                             
+                                             <!-- Produits snacks -->
+                                             <div class="menu-items-editor">
+                                                 <div class="row mb-2">
+                                                     <div class="col-md-12 d-flex justify-content-between align-items-center">
+                                                         <h6>Produits</h6>
+                                                         <button type="button" class="btn btn-sm btn-outline-primary add-menu-item" data-category="snacks">
+                                                             <i class="fas fa-plus me-1"></i> Ajouter un produit
+                                                         </button>
+                                                     </div>
+                                                 </div>
+                                                 
+                                                 <div id="snacks-items-container">
+                                                     <?php 
+                                                     $snacks_items = json_decode($settings['snacks_items'] ?? '[]', true);
+                                                     if (empty($snacks_items)) {
+                                                         $snacks_items = [
+                                                             ['name' => 'Cacahuètes Salées', 'price' => '4', 'description' => 'Parfait avec une bière']
+                                                         ];
+                                                     }
+                                                     
+                                                     foreach ($snacks_items as $index => $item): 
+                                                     ?>
+                                                     <div class="menu-item-row border rounded p-3 mb-3">
+                                                         <div class="row">
+                                                             <div class="col-md-5 mb-2">
+                                                                 <label class="form-label">Nom du produit</label>
+                                                                 <input type="text" class="form-control" name="snacks_items[<?php echo $index; ?>][name]" 
+                                                                        value="<?php echo htmlspecialchars($item['name']); ?>">
+                                                             </div>
+                                                             <div class="col-md-2 mb-2">
+                                                                 <label class="form-label">Prix ($)</label>
+                                                                 <input type="text" class="form-control" name="snacks_items[<?php echo $index; ?>][price]" 
+                                                                        value="<?php echo htmlspecialchars($item['price']); ?>">
+                                                             </div>
+                                                             <div class="col-md-5 mb-2 d-flex align-items-end justify-content-between">
+                                                                 <div class="flex-grow-1 me-2">
+                                                                     <label class="form-label">Description</label>
+                                                                     <input type="text" class="form-control" name="snacks_items[<?php echo $index; ?>][description]" 
+                                                                            value="<?php echo htmlspecialchars($item['description']); ?>">
+                                                                 </div>
+                                                                 <button type="button" class="btn btn-outline-danger remove-menu-item">
+                                                                     <i class="fas fa-trash"></i>
+                                                                 </button>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                     <?php endforeach; ?>
+                                                 </div>
+                                                 <input type="hidden" name="snacks_items_count" id="snacks_items_count" value="<?php echo count($snacks_items); ?>">
+                                             </div>
+                                         </div>
+                                     </div>
+                                     
+                                     <!-- Plats -->
+                                     <div class="card mb-4">
+                                         <div class="card-header bg-light">
+                                             <h6 class="mb-0"><i class="fas fa-hamburger me-2"></i> Plats</h6>
+                                         </div>
+                                         <div class="card-body">
+                                             <div class="row mb-3">
+                                                 <div class="col-md-12">
+                                                     <label for="vitrine_plats_title" class="form-label">Titre de la catégorie</label>
+                                                     <div class="input-group">
+                                                         <span class="input-group-text"><i class="fas fa-hamburger"></i></span>
+                                                         <input type="text" class="form-control" id="vitrine_plats_title" name="vitrine_plats_title" 
+                                                                value="<?php echo htmlspecialchars($settings['plats_title'] ?? 'Plats'); ?>">
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                             
+                                             <!-- Produits plats -->
+                                             <div class="menu-items-editor">
+                                                 <div class="row mb-2">
+                                                     <div class="col-md-12 d-flex justify-content-between align-items-center">
+                                                         <h6>Produits</h6>
+                                                         <button type="button" class="btn btn-sm btn-outline-primary add-menu-item" data-category="plats">
+                                                             <i class="fas fa-plus me-1"></i> Ajouter un produit
+                                                         </button>
+                                                     </div>
+                                                 </div>
+                                                 
+                                                 <div id="plats-items-container">
+                                                     <?php 
+                                                     $plats_items = json_decode($settings['plats_items'] ?? '[]', true);
+                                                     if (empty($plats_items)) {
+                                                         $plats_items = [
+                                                             ['name' => 'Burger Western', 'price' => '12', 'description' => 'Notre spécialité maison']
+                                                         ];
+                                                     }
+                                                     
+                                                     foreach ($plats_items as $index => $item): 
+                                                     ?>
+                                                     <div class="menu-item-row border rounded p-3 mb-3">
+                                                         <div class="row">
+                                                             <div class="col-md-5 mb-2">
+                                                                 <label class="form-label">Nom du produit</label>
+                                                                 <input type="text" class="form-control" name="plats_items[<?php echo $index; ?>][name]" 
+                                                                        value="<?php echo htmlspecialchars($item['name']); ?>">
+                                                             </div>
+                                                             <div class="col-md-2 mb-2">
+                                                                 <label class="form-label">Prix ($)</label>
+                                                                 <input type="text" class="form-control" name="plats_items[<?php echo $index; ?>][price]" 
+                                                                        value="<?php echo htmlspecialchars($item['price']); ?>">
+                                                             </div>
+                                                             <div class="col-md-5 mb-2 d-flex align-items-end justify-content-between">
+                                                                 <div class="flex-grow-1 me-2">
+                                                                     <label class="form-label">Description</label>
+                                                                     <input type="text" class="form-control" name="plats_items[<?php echo $index; ?>][description]" 
+                                                                            value="<?php echo htmlspecialchars($item['description']); ?>">
+                                                                 </div>
+                                                                 <button type="button" class="btn btn-outline-danger remove-menu-item">
+                                                                     <i class="fas fa-trash"></i>
+                                                                 </button>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                     <?php endforeach; ?>
+                                                 </div>
+                                                 <input type="hidden" name="plats_items_count" id="plats_items_count" value="<?php echo count($plats_items); ?>">
+                                             </div>
+                                         </div>
+                                     </div>
                                     
                                     <!-- Équipe -->
                                     <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-users me-2"></i> Section Équipe</h6>
@@ -1123,6 +1480,102 @@ $page_title = 'Configuration et Paramètres';
             document.body.appendChild(form);
             form.submit();
         }
+        
+        // Gestion des produits du menu (ajout/suppression)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion de l'ajout d'un produit
+            const addButtons = document.querySelectorAll('.add-menu-item');
+            addButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const category = this.getAttribute('data-category');
+                    const container = document.getElementById(`${category}-items-container`);
+                    const countInput = document.getElementById(`${category}_items_count`);
+                    
+                    // Récupérer l'index actuel
+                    let currentIndex = parseInt(countInput.value);
+                    
+                    // Créer un nouveau produit
+                    const newItem = document.createElement('div');
+                    newItem.className = 'menu-item-row border rounded p-3 mb-3';
+                    newItem.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-5 mb-2">
+                                <label class="form-label">Nom du produit</label>
+                                <input type="text" class="form-control" name="${category}_items[${currentIndex}][name]" value="">
+                            </div>
+                            <div class="col-md-2 mb-2">
+                                <label class="form-label">Prix ($)</label>
+                                <input type="text" class="form-control" name="${category}_items[${currentIndex}][price]" value="">
+                            </div>
+                            <div class="col-md-5 mb-2 d-flex align-items-end justify-content-between">
+                                <div class="flex-grow-1 me-2">
+                                    <label class="form-label">Description</label>
+                                    <input type="text" class="form-control" name="${category}_items[${currentIndex}][description]" value="">
+                                </div>
+                                <button type="button" class="btn btn-outline-danger remove-menu-item">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Ajouter le nouveau produit au conteneur
+                    container.appendChild(newItem);
+                    
+                    // Mettre à jour le compteur
+                    countInput.value = currentIndex + 1;
+                    
+                    // Ajouter l'événement de suppression au nouveau bouton
+                    addRemoveEventListeners();
+                });
+            });
+            
+            // Fonction pour ajouter les écouteurs d'événements de suppression
+            function addRemoveEventListeners() {
+                const removeButtons = document.querySelectorAll('.remove-menu-item');
+                removeButtons.forEach(button => {
+                    // Supprimer l'écouteur existant pour éviter les doublons
+                    button.removeEventListener('click', removeItemHandler);
+                    // Ajouter le nouvel écouteur
+                    button.addEventListener('click', removeItemHandler);
+                });
+            }
+            
+            // Fonction de gestion de la suppression d'un produit
+            function removeItemHandler() {
+                if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
+                    const itemRow = this.closest('.menu-item-row');
+                    const category = itemRow.querySelector('input[name*="_items"]').name.split('_items')[0];
+                    
+                    // Supprimer l'élément
+                    itemRow.remove();
+                    
+                    // Réindexer les éléments restants
+                    reindexItems(category);
+                }
+            }
+            
+            // Fonction pour réindexer les éléments après suppression
+            function reindexItems(category) {
+                const container = document.getElementById(`${category}-items-container`);
+                const items = container.querySelectorAll('.menu-item-row');
+                const countInput = document.getElementById(`${category}_items_count`);
+                
+                items.forEach((item, index) => {
+                    const inputs = item.querySelectorAll(`input[name*="${category}_items"]`);
+                    inputs.forEach(input => {
+                        const fieldName = input.name.split(']')[1]; // Récupérer [name], [price] ou [description]
+                        input.name = `${category}_items[${index}]${fieldName}`;
+                    });
+                });
+                
+                // Mettre à jour le compteur
+                countInput.value = items.length;
+            }
+            
+            // Initialiser les écouteurs de suppression pour les éléments existants
+            addRemoveEventListeners();
+        });
     </script>
 </body>
 </html>
