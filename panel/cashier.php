@@ -413,6 +413,39 @@ $page_title = 'Caisse Enregistreuse';
         .card:hover .customer-search-container {
             transform: none;
         }
+        
+        /* Style spécifique pour les entreprises */
+        .company-customer {
+            background-color: rgba(218, 165, 32, 0.1);
+            border-left: 3px solid var(--secondary-color);
+        }
+        
+        .company-customer:hover {
+            background-color: rgba(218, 165, 32, 0.2);
+        }
+        
+        .company-customer .fa-building {
+            color: var(--secondary-color) !important;
+        }
+        
+        /* Style pour l'entreprise sélectionnée */
+        .company-selected {
+            padding: 10px;
+            background-color: rgba(218, 165, 32, 0.1);
+            border-left: 3px solid var(--secondary-color);
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .company-selected .fa-building {
+            color: var(--secondary-color) !important;
+            font-size: 1.1em;
+        }
+        
+        .company-selected #selected_customer_name {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -574,13 +607,22 @@ $page_title = 'Caisse Enregistreuse';
                                                 Client anonyme
                                             </div>
                                             <?php foreach ($customers as $customer): ?>
-                                                <div class="dropdown-item customer-option" 
+                                                <?php 
+                                                // Vérifier si c'est une entreprise (a une réduction entreprise)
+                                                $isCompany = $customer['business_discount'] > 0;
+                                                ?>
+                                                <div class="dropdown-item customer-option <?php echo $isCompany ? 'company-customer' : ''; ?>" 
                                                      data-customer-id="<?php echo $customer['id']; ?>"
                                                      data-customer-name="<?php echo strtolower(htmlspecialchars($customer['name'])); ?>"
+                                                     data-is-company="<?php echo $isCompany ? 'true' : 'false'; ?>"
                                                      onclick="selectCustomer(<?php echo $customer['id']; ?>, '<?php echo addslashes(htmlspecialchars($customer['name'])); ?>', <?php echo $customer['is_loyal'] ? 'true' : 'false'; ?>, <?php echo $customer['loyalty_discount']; ?>, <?php echo $customer['business_discount'] ?: 0; ?>)">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <span>
-                                                            <i class="fas fa-user me-2"></i>
+                                                            <?php if ($isCompany): ?>
+                                                                <i class="fas fa-building me-2 text-secondary"></i>
+                                                            <?php else: ?>
+                                                                <i class="fas fa-user me-2"></i>
+                                                            <?php endif; ?>
                                                             <?php echo htmlspecialchars($customer['name']); ?>
                                                         </span>
                                                         <div>
@@ -951,6 +993,9 @@ $page_title = 'Caisse Enregistreuse';
             document.getElementById('customer_search').value = customerName;
             document.getElementById('selected_customer_name').textContent = customerName;
             
+            // Déterminer si c'est une entreprise
+            const isCompany = businessDiscount > 0 && customerId !== 0;
+            
             // Mettre à jour les badges
             const badge = document.getElementById('selected_customer_badge');
             let badgeHtml = '';
@@ -959,11 +1004,33 @@ $page_title = 'Caisse Enregistreuse';
                 badgeHtml += '<span class="badge bg-warning text-dark ms-1">⭐ -' + loyaltyDiscount + '%</span>';
             }
             
-            if (businessDiscount > 0 && customerId !== 0) {
+            if (isCompany) {
                 badgeHtml += '<span class="badge bg-success ms-1">🏢 -' + businessDiscount + '%</span>';
             }
             
             badge.innerHTML = badgeHtml;
+            
+            // Mettre à jour l'icône et le style selon le type de client
+            const selectedCustomerElement = document.getElementById('selected_customer');
+            if (isCompany) {
+                selectedCustomerElement.innerHTML = `
+                    <small class="text-muted">
+                        <i class="fas fa-building me-1 text-secondary"></i>
+                        Client sélectionné: <span id="selected_customer_name" class="fw-bold text-secondary">${customerName}</span>
+                        <span id="selected_customer_badge">${badgeHtml}</span>
+                    </small>
+                `;
+                selectedCustomerElement.classList.add('company-selected');
+            } else {
+                selectedCustomerElement.innerHTML = `
+                    <small class="text-muted">
+                        <i class="fas fa-${customerId === 0 ? 'user-secret' : 'user'} me-1"></i>
+                        Client sélectionné: <span id="selected_customer_name">${customerName}</span>
+                        <span id="selected_customer_badge">${badgeHtml}</span>
+                    </small>
+                `;
+                selectedCustomerElement.classList.remove('company-selected');
+            }
             
             // Masquer le dropdown
             hideCustomerDropdown();
