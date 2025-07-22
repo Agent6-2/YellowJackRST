@@ -7,6 +7,7 @@
  */
 
 require_once 'config/database.php';
+require_once 'includes/functions.php';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -134,7 +135,7 @@ require_once 'config/database.php';
                 <div class="col-lg-12 text-center mb-5">
                     <?php
                     // Récupérer les paramètres de la vitrine depuis la base de données
-                    $db = getConnection();
+                    $db = getDB();
                     $stmt = $db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('menu_title', 'menu_description', 'alcool_title', 'soft_title', 'snacks_title', 'plats_title', 'alcool_items', 'soft_items', 'snacks_items', 'plats_items')");
                     $stmt->execute();
                     $settings_raw = $stmt->fetchAll();
