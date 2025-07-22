@@ -277,6 +277,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
+                // Traitement des membres de l'équipe
+                $team_members = [];
+                if (isset($_POST['team_members']) && is_array($_POST['team_members'])) {
+                    foreach ($_POST['team_members'] as $member) {
+                        if (!empty($member['title'])) {
+                            $team_members[] = [
+                                'title' => trim($member['title']),
+                                'role' => trim($member['role'] ?? ''),
+                                'description' => trim($member['description'] ?? ''),
+                                'icon' => trim($member['icon'] ?? 'fa-user')
+                            ];
+                        }
+                    }
+                }
+                
                 if (empty($vitrine_bar_name)) {
                     $error = 'Le nom du bar est obligatoire pour la vitrine.';
                 } else {
@@ -304,7 +319,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             'alcool_items' => json_encode($alcool_items, JSON_UNESCAPED_UNICODE),
                             'soft_items' => json_encode($soft_items, JSON_UNESCAPED_UNICODE),
                             'snacks_items' => json_encode($snacks_items, JSON_UNESCAPED_UNICODE),
-                            'plats_items' => json_encode($plats_items, JSON_UNESCAPED_UNICODE)
+                            'plats_items' => json_encode($plats_items, JSON_UNESCAPED_UNICODE),
+                            // Membres de l'équipe (encodés en JSON)
+                            'team_members' => json_encode($team_members, JSON_UNESCAPED_UNICODE)
                         ];
                         
                         foreach ($vitrine_settings as $key => $value) {
@@ -1302,6 +1319,89 @@ $page_title = 'Configuration et Paramètres';
                                         </div>
                                     </div>
                                     
+                                    <!-- Membres de l'équipe -->
+                                    <div class="card mb-4">
+                                        <div class="card-header bg-light">
+                                            <h6 class="mb-0"><i class="fas fa-users me-2"></i> Membres de l'équipe</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="team-members-container">
+                                                <?php
+                                                // Récupérer les membres de l'équipe
+                                                $team_members = json_decode($settings['team_members'] ?? '[]', true);
+                                                if (empty($team_members) || !is_array($team_members)) {
+                                                    $team_members = [
+                                                        ['title' => 'Direction', 'role' => 'Patron', 'description' => 'Gestion générale et vision stratégique du Yellowjack.', 'icon' => 'fa-user-tie'],
+                                                        ['title' => 'Management', 'role' => 'Responsables', 'description' => 'Supervision des opérations quotidiennes et gestion d\'équipe.', 'icon' => 'fa-user-cog'],
+                                                        ['title' => 'Service', 'role' => 'CDI', 'description' => 'Service client et gestion de la caisse enregistreuse.', 'icon' => 'fa-cocktail'],
+                                                        ['title' => 'Entretien', 'role' => 'CDD', 'description' => 'Maintien de la propreté et de l\'ambiance du bar.', 'icon' => 'fa-broom']
+                                                    ];
+                                                }
+                                                
+                                                // Afficher les membres de l'équipe
+                                                $team_members_count = count($team_members);
+                                                for ($i = 0; $i < $team_members_count; $i++) {
+                                                    $member = $team_members[$i];
+                                                ?>
+                                                <div class="team-member-item mb-3 p-3 border rounded">
+                                                    <div class="row">
+                                                        <div class="col-md-3">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Icône</label>
+                                                                <select class="form-select" name="team_members[<?php echo $i; ?>][icon]">
+                                                                    <option value="fa-user-tie" <?php echo ($member['icon'] === 'fa-user-tie') ? 'selected' : ''; ?>>Costume (Direction)</option>
+                                                                    <option value="fa-user-cog" <?php echo ($member['icon'] === 'fa-user-cog') ? 'selected' : ''; ?>>Engrenage (Management)</option>
+                                                                    <option value="fa-cocktail" <?php echo ($member['icon'] === 'fa-cocktail') ? 'selected' : ''; ?>>Cocktail (Service)</option>
+                                                                    <option value="fa-broom" <?php echo ($member['icon'] === 'fa-broom') ? 'selected' : ''; ?>>Balai (Entretien)</option>
+                                                                    <option value="fa-user" <?php echo ($member['icon'] === 'fa-user') ? 'selected' : ''; ?>>Utilisateur (Général)</option>
+                                                                    <option value="fa-star" <?php echo ($member['icon'] === 'fa-star') ? 'selected' : ''; ?>>Étoile</option>
+                                                                    <option value="fa-shield-alt" <?php echo ($member['icon'] === 'fa-shield-alt') ? 'selected' : ''; ?>>Bouclier (Sécurité)</option>
+                                                                    <option value="fa-cash-register" <?php echo ($member['icon'] === 'fa-cash-register') ? 'selected' : ''; ?>>Caisse</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Titre</label>
+                                                                <input type="text" class="form-control" name="team_members[<?php echo $i; ?>][title]" value="<?php echo htmlspecialchars($member['title']); ?>" placeholder="Ex: Direction">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Rôle</label>
+                                                                <input type="text" class="form-control" name="team_members[<?php echo $i; ?>][role]" value="<?php echo htmlspecialchars($member['role']); ?>" placeholder="Ex: Patron">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <div class="d-flex justify-content-end align-items-end h-100">
+                                                                <button type="button" class="btn btn-danger btn-sm remove-team-member">
+                                                                    <i class="fas fa-trash"></i> Supprimer
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-12">
+                                                            <div class="mb-3">
+                                                                <label class="form-label">Description</label>
+                                                                <textarea class="form-control" name="team_members[<?php echo $i; ?>][description]" rows="2" placeholder="Description du rôle"><?php echo htmlspecialchars($member['description']); ?></textarea>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <?php } ?>
+                                                
+                                                <input type="hidden" id="team_members_count" name="team_members_count" value="<?php echo $team_members_count; ?>">
+                                                
+                                                <div class="d-grid gap-2 mt-3">
+                                                    <button type="button" class="btn btn-success btn-sm" id="add-team-member">
+                                                        <i class="fas fa-plus me-2"></i>Ajouter un membre d'équipe
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
                                     <!-- Contact -->
                                     <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-envelope me-2"></i> Section Contact</h6>
                                     
@@ -1493,6 +1593,90 @@ $page_title = 'Configuration et Paramètres';
                     
                     // Récupérer l'index actuel
                     let currentIndex = parseInt(countInput.value);
+                    
+            // Gestion des membres de l'équipe
+            const addTeamMemberButton = document.getElementById('add-team-member');
+            if (addTeamMemberButton) {
+                addTeamMemberButton.addEventListener('click', function() {
+                    const container = document.querySelector('.team-members-container');
+                    const countInput = document.getElementById('team_members_count');
+                    
+                    // Récupérer l'index actuel
+                    let currentIndex = parseInt(countInput.value);
+                    
+                    // Créer un nouveau membre d'équipe
+                    const newMember = document.createElement('div');
+                    newMember.className = 'team-member-item mb-3 p-3 border rounded';
+                    newMember.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Icône</label>
+                                    <select class="form-select" name="team_members[${currentIndex}][icon]">
+                                        <option value="fa-user-tie">Costume (Direction)</option>
+                                        <option value="fa-user-cog">Engrenage (Management)</option>
+                                        <option value="fa-cocktail">Cocktail (Service)</option>
+                                        <option value="fa-broom">Balai (Entretien)</option>
+                                        <option value="fa-user">Utilisateur (Général)</option>
+                                        <option value="fa-star">Étoile</option>
+                                        <option value="fa-shield-alt">Bouclier (Sécurité)</option>
+                                        <option value="fa-cash-register">Caisse</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Titre</label>
+                                    <input type="text" class="form-control" name="team_members[${currentIndex}][title]" value="" placeholder="Ex: Direction">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label class="form-label">Rôle</label>
+                                    <input type="text" class="form-control" name="team_members[${currentIndex}][role]" value="" placeholder="Ex: Patron">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="d-flex justify-content-end align-items-end h-100">
+                                    <button type="button" class="btn btn-danger btn-sm remove-team-member">
+                                        <i class="fas fa-trash"></i> Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label class="form-label">Description</label>
+                                    <textarea class="form-control" name="team_members[${currentIndex}][description]" rows="2" placeholder="Description du rôle"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Insérer le nouveau membre avant le bouton d'ajout
+                    container.insertBefore(newMember, addTeamMemberButton.parentNode.parentNode);
+                    
+                    // Mettre à jour le compteur
+                    countInput.value = currentIndex + 1;
+                    
+                    // Ajouter l'événement de suppression au nouveau bouton
+                    const removeButton = newMember.querySelector('.remove-team-member');
+                    removeButton.addEventListener('click', function() {
+                        newMember.remove();
+                    });
+                });
+            }
+            
+            // Gestion de la suppression des membres de l'équipe existants
+            const removeTeamMemberButtons = document.querySelectorAll('.remove-team-member');
+            removeTeamMemberButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const memberItem = this.closest('.team-member-item');
+                    memberItem.remove();
+                });
+            });
+                    
                     
                     // Créer un nouveau produit
                     const newItem = document.createElement('div');

@@ -11,7 +11,7 @@ require_once 'includes/functions.php';
 
 // Récupérer les paramètres généraux de la vitrine
 $db = getDB();
-$stmt = $db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('bar_name', 'bar_slogan', 'bar_address', 'bar_phone', 'team_title', 'team_description', 'contact_title', 'contact_hours')");
+$stmt = $db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('bar_name', 'bar_slogan', 'bar_address', 'bar_phone', 'team_title', 'team_description', 'contact_title', 'contact_hours', 'team_members')");
 $stmt->execute();
 $general_settings_raw = $stmt->fetchAll();
 
@@ -29,6 +29,42 @@ $team_title = $general_settings['team_title'] ?? 'Notre Équipe';
 $team_description = $general_settings['team_description'] ?? 'Rencontrez l\'équipe passionnée du Yellowjack';
 $contact_title = $general_settings['contact_title'] ?? 'Nous Contacter';
 $contact_hours = $general_settings['contact_hours'] ?? 'Ouvert 24h/24<br>7j/7';
+
+// Récupérer les membres de l'équipe
+$team_members = [];
+if (isset($general_settings['team_members']) && !empty($general_settings['team_members'])) {
+    $team_members = json_decode($general_settings['team_members'], true) ?? [];
+}
+
+// Valeurs par défaut pour les membres de l'équipe si aucun n'est défini
+if (empty($team_members)) {
+    $team_members = [
+        [
+            'title' => 'Direction',
+            'role' => 'Patron',
+            'description' => 'Gestion générale et vision stratégique du Yellowjack.',
+            'icon' => 'fa-user-tie'
+        ],
+        [
+            'title' => 'Management',
+            'role' => 'Responsables',
+            'description' => 'Supervision des opérations quotidiennes et gestion d\'équipe.',
+            'icon' => 'fa-user-cog'
+        ],
+        [
+            'title' => 'Service',
+            'role' => 'CDI',
+            'description' => 'Service client et gestion de la caisse enregistreuse.',
+            'icon' => 'fa-cocktail'
+        ],
+        [
+            'title' => 'Entretien',
+            'role' => 'Personnel',
+            'description' => 'Maintien de la propreté et de l\'ordre dans l\'établissement.',
+            'icon' => 'fa-broom'
+        ]
+    ];
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -310,49 +346,18 @@ $contact_hours = $general_settings['contact_hours'] ?? 'Ouvert 24h/24<br>7j/7';
             </div>
             
             <div class="row">
+                <?php foreach ($team_members as $member): ?>
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="team-card">
                         <div class="team-avatar">
-                            <i class="fas fa-user-tie fa-4x"></i>
+                            <i class="fas <?php echo htmlspecialchars($member['icon']); ?> fa-4x"></i>
                         </div>
-                        <h4>Direction</h4>
-                        <p class="text-warning">Patron</p>
-                        <p>Gestion générale et vision stratégique du Yellowjack.</p>
+                        <h4><?php echo htmlspecialchars($member['title']); ?></h4>
+                        <p class="text-warning"><?php echo htmlspecialchars($member['role']); ?></p>
+                        <p><?php echo htmlspecialchars($member['description']); ?></p>
                     </div>
                 </div>
-                
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="team-card">
-                        <div class="team-avatar">
-                            <i class="fas fa-user-cog fa-4x"></i>
-                        </div>
-                        <h4>Management</h4>
-                        <p class="text-warning">Responsables</p>
-                        <p>Supervision des opérations quotidiennes et gestion d'équipe.</p>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="team-card">
-                        <div class="team-avatar">
-                            <i class="fas fa-cocktail fa-4x"></i>
-                        </div>
-                        <h4>Service</h4>
-                        <p class="text-warning">CDI</p>
-                        <p>Service client et gestion de la caisse enregistreuse.</p>
-                    </div>
-                </div>
-                
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="team-card">
-                        <div class="team-avatar">
-                            <i class="fas fa-broom fa-4x"></i>
-                        </div>
-                        <h4>Entretien</h4>
-                        <p class="text-warning">CDD</p>
-                        <p>Maintien de la propreté et de l'ambiance du bar.</p>
-                    </div>
-                </div>
+                <?php endforeach; ?>
             </div>
         </div>
     </section>
