@@ -193,6 +193,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Cette fonctionnalité nécessiterait des permissions spéciales sur le serveur
                 $message = 'Fonctionnalité de sauvegarde en cours de développement.';
                 break;
+                
+            case 'update_vitrine':
+                // Vérifier que l'utilisateur est un patron
+                if (!$auth->hasPermission('Patron')) {
+                    $error = 'Vous n\'avez pas les permissions nécessaires pour modifier la vitrine.';
+                    break;
+                }
+                
+                // Récupérer les données du formulaire
+                $vitrine_bar_name = trim($_POST['vitrine_bar_name'] ?? '');
+                $vitrine_bar_slogan = trim($_POST['vitrine_bar_slogan'] ?? '');
+                $vitrine_bar_address = trim($_POST['vitrine_bar_address'] ?? '');
+                $vitrine_bar_phone = trim($_POST['vitrine_bar_phone'] ?? '');
+                $vitrine_menu_title = trim($_POST['vitrine_menu_title'] ?? '');
+                $vitrine_menu_description = trim($_POST['vitrine_menu_description'] ?? '');
+                $vitrine_team_title = trim($_POST['vitrine_team_title'] ?? '');
+                $vitrine_team_description = trim($_POST['vitrine_team_description'] ?? '');
+                $vitrine_contact_title = trim($_POST['vitrine_contact_title'] ?? '');
+                $vitrine_contact_hours = trim($_POST['vitrine_contact_hours'] ?? '');
+                
+                if (empty($vitrine_bar_name)) {
+                    $error = 'Le nom du bar est obligatoire pour la vitrine.';
+                } else {
+                    try {
+                        $db->beginTransaction();
+                        
+                        // Mettre à jour les paramètres de la vitrine
+                        $vitrine_settings = [
+                            'bar_name' => $vitrine_bar_name,
+                            'bar_slogan' => $vitrine_bar_slogan,
+                            'bar_address' => $vitrine_bar_address,
+                            'bar_phone' => $vitrine_bar_phone,
+                            'menu_title' => $vitrine_menu_title,
+                            'menu_description' => $vitrine_menu_description,
+                            'team_title' => $vitrine_team_title,
+                            'team_description' => $vitrine_team_description,
+                            'contact_title' => $vitrine_contact_title,
+                            'contact_hours' => $vitrine_contact_hours
+                        ];
+                        
+                        foreach ($vitrine_settings as $key => $value) {
+                            // Vérifier si le paramètre existe déjà
+                            $stmt = $db->prepare("SELECT COUNT(*) FROM system_settings WHERE setting_key = ?");
+                            $stmt->execute([$key]);
+                            $exists = (int)$stmt->fetchColumn() > 0;
+                            
+                            if ($exists) {
+                                // Mettre à jour le paramètre existant
+                                $stmt = $db->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = ?");
+                                $stmt->execute([$value, $key]);
+                            } else {
+                                // Créer un nouveau paramètre
+                                $stmt = $db->prepare("INSERT INTO system_settings (setting_key, setting_value, description) VALUES (?, ?, ?)");
+                                $stmt->execute([$key, $value, 'Paramètre de la vitrine du site']);
+                            }
+                        }
+                        
+                        $db->commit();
+                        $message = 'Configuration de la vitrine mise à jour avec succès !';
+                    } catch (Exception $e) {
+                        $db->rollBack();
+                        $error = 'Erreur lors de la mise à jour de la vitrine: ' . $e->getMessage();
+                    }
+                }
+                break;
         }
     }
 }
@@ -363,6 +428,14 @@ $page_title = 'Configuration et Paramètres';
                             Commissions
                         </button>
                     </li>
+                    <?php if ($auth->hasPermission('Patron')): ?>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="vitrine-tab" data-bs-toggle="tab" data-bs-target="#vitrine" type="button" role="tab">
+                            <i class="fas fa-store me-2"></i>
+                            Vitrine
+                        </button>
+                    </li>
+                    <?php endif; ?>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about" type="button" role="tab">
                             <i class="fas fa-info-circle me-2"></i>
@@ -765,6 +838,148 @@ $page_title = 'Configuration et Paramètres';
                             </div>
                         </div>
                     </div>
+                    
+                    <?php if ($auth->hasPermission('Patron')): ?>
+                    <!-- Onglet Vitrine -->
+                    <div class="tab-pane fade" id="vitrine" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-store me-2"></i>
+                                    Configuration de la Vitrine
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST">
+                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                    <input type="hidden" name="action" value="update_vitrine">
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-md-12">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                Cette section vous permet de personnaliser la vitrine du site visible par les clients.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Informations générales -->
+                                    <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-building me-2"></i> Informations du Bar</h6>
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="vitrine_bar_name" class="form-label">Nom du bar *</label>
+                                                <input type="text" class="form-control" id="vitrine_bar_name" name="vitrine_bar_name" 
+                                                       value="<?php echo htmlspecialchars($settings['bar_name'] ?? ''); ?>" required>
+                                                <div class="form-text">Nom affiché sur la vitrine</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="vitrine_bar_slogan" class="form-label">Slogan</label>
+                                                <input type="text" class="form-control" id="vitrine_bar_slogan" name="vitrine_bar_slogan" 
+                                                       value="<?php echo htmlspecialchars($settings['bar_slogan'] ?? 'L\'authentique bar western de Sandy Shore'); ?>">
+                                                <div class="form-text">Court slogan affiché sous le nom du bar</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="vitrine_bar_address" class="form-label">Adresse</label>
+                                                <input type="text" class="form-control" id="vitrine_bar_address" name="vitrine_bar_address" 
+                                                       value="<?php echo htmlspecialchars($settings['bar_address'] ?? ''); ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="vitrine_bar_phone" class="form-label">Téléphone</label>
+                                                <input type="text" class="form-control" id="vitrine_bar_phone" name="vitrine_bar_phone" 
+                                                       value="<?php echo htmlspecialchars($settings['bar_phone'] ?? ''); ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Carte des boissons et plats -->
+                                    <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-utensils me-2"></i> Carte des Boissons et Plats</h6>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="vitrine_menu_title" class="form-label">Titre de la section Carte</label>
+                                                <input type="text" class="form-control" id="vitrine_menu_title" name="vitrine_menu_title" 
+                                                       value="<?php echo htmlspecialchars($settings['menu_title'] ?? 'Notre Carte'); ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="vitrine_menu_description" class="form-label">Description de la carte</label>
+                                                <textarea class="form-control" id="vitrine_menu_description" name="vitrine_menu_description" rows="2"><?php echo htmlspecialchars($settings['menu_description'] ?? 'Découvrez notre sélection de boissons et plats dans l\'esprit western'); ?></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Équipe -->
+                                    <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-users me-2"></i> Section Équipe</h6>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="vitrine_team_title" class="form-label">Titre de la section Équipe</label>
+                                                <input type="text" class="form-control" id="vitrine_team_title" name="vitrine_team_title" 
+                                                       value="<?php echo htmlspecialchars($settings['team_title'] ?? 'Notre Équipe'); ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label for="vitrine_team_description" class="form-label">Description de l'équipe</label>
+                                                <textarea class="form-control" id="vitrine_team_description" name="vitrine_team_description" rows="2"><?php echo htmlspecialchars($settings['team_description'] ?? 'Rencontrez l\'équipe passionnée du Yellowjack'); ?></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Contact -->
+                                    <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-envelope me-2"></i> Section Contact</h6>
+                                    
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="vitrine_contact_title" class="form-label">Titre de la section Contact</label>
+                                                <input type="text" class="form-control" id="vitrine_contact_title" name="vitrine_contact_title" 
+                                                       value="<?php echo htmlspecialchars($settings['contact_title'] ?? 'Nous Contacter'); ?>">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="vitrine_contact_hours" class="form-label">Horaires d'ouverture</label>
+                                                <input type="text" class="form-control" id="vitrine_contact_hours" name="vitrine_contact_hours" 
+                                                       value="<?php echo htmlspecialchars($settings['contact_hours'] ?? 'Ouvert 24h/24, 7j/7'); ?>">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                        <a href="../index.php" target="_blank" class="btn btn-outline-primary me-2">
+                                            <i class="fas fa-external-link-alt me-2"></i>
+                                            Voir la vitrine
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>
+                                            Sauvegarder les modifications
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                     
                     <!-- Onglet À propos -->
                     <div class="tab-pane fade" id="about" role="tabpanel">
