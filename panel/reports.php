@@ -60,9 +60,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 if (!$week_id) {
                     $error_message = 'Impossible de déterminer la semaine cible.';
                 } else {
-                    // Calculer les valeurs
-                    $base_salary_per_cleaning = 60; // Tarif par ménage
-                    $total_salary = $cleaning_count * $base_salary_per_cleaning;
+                    // Récupérer le rôle de l'employé pour calculer la commission
+                    $stmt = $db->prepare("SELECT role FROM users WHERE id = ?");
+                    $stmt->execute([$employee_id]);
+                    $employee_role = $stmt->fetchColumn();
+                    
+                    // Déterminer la clé de paramètre selon le rôle
+                    $cleaning_rate_setting_key = '';
+                    switch ($employee_role) {
+                        case 'CDD':
+                            $cleaning_rate_setting_key = 'cleaning_rate_cdd';
+                            break;
+                        case 'CDI':
+                            $cleaning_rate_setting_key = 'cleaning_rate_cdi';
+                            break;
+                        case 'Responsable':
+                            $cleaning_rate_setting_key = 'cleaning_rate_responsable';
+                            break;
+                        case 'Patron':
+                        case 'co_patron':
+                            $cleaning_rate_setting_key = 'cleaning_rate_patron';
+                            break;
+                        default:
+                            $cleaning_rate_setting_key = 'cleaning_rate_cdd'; // Par défaut CDD
+                    }
+                    
+                    // Récupérer le pourcentage depuis la base de données
+                    $stmt_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
+                    $stmt_rate->execute([$cleaning_rate_setting_key]);
+                    $user_cleaning_percentage = floatval($stmt_rate->fetchColumn() ?: 25); // 25% par défaut
+                    
+                    // Calculer le salaire de l'employé (pourcentage du revenu de l'entreprise)
+                    $company_revenue_per_cleaning = 60; // Chaque ménage rapporte 60$ à l'entreprise
+                    $total_company_revenue = $cleaning_count * $company_revenue_per_cleaning;
+                    $total_salary = ($total_company_revenue * $user_cleaning_percentage) / 100;
                     $current_time = date('Y-m-d H:i:s');
                     
                     // Insérer l'enregistrement de ménage manuel
@@ -764,7 +795,7 @@ $page_title = 'Rapports et Analyses';
                                         </label>
                                         <input type="number" class="form-control" id="cleaning_count" name="cleaning_count" 
                                                min="1" required placeholder="Ex: 5">
-                                        <div class="form-text">Tarif: 60$ par ménage</div>
+                                        <div class="form-text">Commission selon le rôle de l'employé</div>
                                     </div>
                                     
                                     <div class="col-md-3">
@@ -791,7 +822,8 @@ $page_title = 'Rapports et Analyses';
                                     <div class="alert alert-info mb-0">
                                         <i class="fas fa-info-circle me-2"></i>
                                         <strong>Information :</strong> Cette fonctionnalité permet d'ajouter manuellement des ménages 
-                                        à un employé. Les ménages seront automatiquement associés à la semaine active ou à la date spécifiée.
+                                        à un employé. La commission sera calculée selon le rôle de l'employé (CDD, CDI, Responsable, Patron). 
+                                        Les ménages seront automatiquement associés à la semaine active ou à la date spécifiée.
                                     </div>
                                 </div>
                                 
