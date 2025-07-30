@@ -251,7 +251,7 @@ try {
     
     // Valeurs par défaut si aucun objectif défini
     $default_goals = [
-        'menages_hebdomadaire' => 25,
+        'menages_hebdomadaire' => 1200,
         'salaire_hebdomadaire' => 500,
         'ventes_hebdomadaires' => 12,
         'commissions_hebdomadaires' => 125
