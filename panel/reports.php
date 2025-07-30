@@ -18,6 +18,86 @@ $auth = getAuth();
 $user = $auth->getCurrentUser();
 $db = getDB();
 
+// Variables pour les messages
+$success_message = '';
+$error_message = '';
+
+// Traitement de l'ajout manuel de ménages
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_manual_cleaning') {
+    // Vérifier les permissions (co_patron ou patron)
+    if ($user['role'] === 'Patron' || $user['role'] === 'co_patron') {
+        $employee_id = (int)$_POST['employee_id'];
+        $cleaning_count = (int)$_POST['cleaning_count'];
+        $manual_date = $_POST['manual_date'] ?? null;
+        
+        // Validations
+        if ($employee_id <= 0) {
+            $error_message = 'Veuillez sélectionner un employé valide.';
+        } elseif ($cleaning_count <= 0) {
+            $error_message = 'Le nombre de ménages doit être positif.';
+        } else {
+            // Vérifier que l'employé existe
+            $stmt = $db->prepare("SELECT id, first_name, last_name FROM users WHERE id = ? AND status = 'active'");
+            $stmt->execute([$employee_id]);
+            $employee = $stmt->fetch();
+            
+            if (!$employee) {
+                $error_message = 'Employé non trouvé ou inactif.';
+            } else {
+                // Déterminer la semaine à utiliser
+                if ($manual_date) {
+                    // Trouver la semaine correspondant à la date
+                    $stmt = $db->prepare("SELECT id FROM weeks WHERE ? BETWEEN week_start AND week_end");
+                    $stmt->execute([$manual_date]);
+                    $target_week = $stmt->fetch();
+                    $week_id = $target_week ? $target_week['id'] : null;
+                } else {
+                    // Utiliser la semaine active
+                    $active_week = getActiveWeekNew();
+                    $week_id = $active_week ? $active_week['id'] : null;
+                }
+                
+                if (!$week_id) {
+                    $error_message = 'Impossible de déterminer la semaine cible.';
+                } else {
+                    // Calculer les valeurs
+                    $base_salary_per_cleaning = 60; // Tarif par ménage
+                    $total_salary = $cleaning_count * $base_salary_per_cleaning;
+                    $current_time = date('Y-m-d H:i:s');
+                    
+                    // Insérer l'enregistrement de ménage manuel
+                    $stmt = $db->prepare("
+                        INSERT INTO cleaning_services (
+                            user_id, start_time, end_time, cleaning_count, 
+                            duration_minutes, base_salary, total_salary, 
+                            status, week_id, created_at
+                        ) VALUES (?, ?, ?, ?, 0, ?, ?, 'completed', ?, ?)
+                    ");
+                    
+                    $result = $stmt->execute([
+                        $employee_id,
+                        $current_time,
+                        $current_time,
+                        $cleaning_count,
+                        $total_salary,
+                        $total_salary,
+                        $week_id,
+                        $current_time
+                    ]);
+                    
+                    if ($result) {
+                        $success_message = "{$cleaning_count} ménages ajoutés à {$employee['first_name']} {$employee['last_name']} avec succès !";
+                    } else {
+                        $error_message = 'Erreur lors de l\'ajout des ménages.';
+                    }
+                }
+            }
+        }
+    } else {
+        $error_message = 'Accès refusé. Seuls les patrons et co-patrons peuvent ajouter des ménages manuellement.';
+    }
+}
+
 // Paramètres de période
 $period = $_GET['period'] ?? 'active_week';
 $custom_start = $_GET['start_date'] ?? '';
@@ -286,6 +366,39 @@ $stmt = $db->prepare($top_customers_query);
 $stmt->execute([$start_date, $end_date]);
 $top_customers = $stmt->fetchAll();
 
+// Liste des employés actifs pour le formulaire d'ajout manuel
+$employees_query = "SELECT id, first_name, last_name, role FROM users WHERE status = 'active' ORDER BY first_name, last_name";
+$stmt = $db->prepare($employees_query);
+$stmt->execute();
+$active_employees = $stmt->fetchAll();
+
+// Historique des ajouts manuels récents (pour les patrons)
+if ($user['role'] === 'Patron' || $user['role'] === 'co_patron') {
+    $manual_history_query = "
+        SELECT 
+            cs.id,
+            cs.cleaning_count,
+            cs.total_salary,
+            cs.created_at,
+            u.first_name,
+            u.last_name,
+            w.week_number
+        FROM cleaning_services cs
+        JOIN users u ON cs.user_id = u.id
+        LEFT JOIN weeks w ON cs.week_id = w.id
+        WHERE cs.duration_minutes = 0 
+            AND cs.start_time = cs.end_time
+            AND cs.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        ORDER BY cs.created_at DESC
+        LIMIT 10
+    ";
+    $stmt = $db->prepare($manual_history_query);
+    $stmt->execute();
+    $manual_history = $stmt->fetchAll();
+} else {
+    $manual_history = [];
+}
+
 $page_title = 'Rapports et Analyses';
 ?>
 <!DOCTYPE html>
@@ -412,6 +525,23 @@ $page_title = 'Rapports et Analyses';
                     <strong>Période analysée :</strong> <?php echo $period_label; ?>
                     (<?php echo formatDate($start_date); ?> - <?php echo formatDate($end_date); ?>)
                 </div>
+                
+                <!-- Messages de succès et d'erreur -->
+                <?php if ($success_message): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <?php echo htmlspecialchars($success_message); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <?php if ($error_message): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <?php echo htmlspecialchars($error_message); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
                 
                 <!-- Statistiques générales -->
                 <div class="row mb-4">
@@ -595,6 +725,134 @@ $page_title = 'Rapports et Analyses';
                         </div>
                     </div>
                 </div>
+                
+                <!-- Formulaire d'ajout manuel de ménages (visible uniquement pour Patron et co_patron) -->
+                <?php if ($user['role'] === 'Patron' || $user['role'] === 'co_patron'): ?>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-plus-circle me-2"></i>
+                                    Ajout Manuel de Ménages
+                                    <small class="text-muted ms-2">(Réservé aux Patrons)</small>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <form method="POST" action="" class="row g-3">
+                                    <input type="hidden" name="action" value="add_manual_cleaning">
+                                    
+                                    <div class="col-md-4">
+                                        <label for="employee_id" class="form-label">
+                                            <i class="fas fa-user me-1"></i>
+                                            Employé *
+                                        </label>
+                                        <select class="form-select" id="employee_id" name="employee_id" required>
+                                            <option value="">Sélectionner un employé...</option>
+                                            <?php foreach ($active_employees as $emp): ?>
+                                                <option value="<?php echo $emp['id']; ?>">
+                                                    <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name'] . ' (' . $emp['role'] . ')'); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label for="cleaning_count" class="form-label">
+                                            <i class="fas fa-broom me-1"></i>
+                                            Nombre de ménages *
+                                        </label>
+                                        <input type="number" class="form-control" id="cleaning_count" name="cleaning_count" 
+                                               min="1" max="50" required placeholder="Ex: 5">
+                                        <div class="form-text">Tarif: 60$ par ménage</div>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <label for="manual_date" class="form-label">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            Date (optionnel)
+                                        </label>
+                                        <input type="date" class="form-control" id="manual_date" name="manual_date">
+                                        <div class="form-text">Vide = semaine active</div>
+                                    </div>
+                                    
+                                    <div class="col-md-2">
+                                        <label class="form-label">&nbsp;</label>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-warning">
+                                                <i class="fas fa-plus me-1"></i>
+                                                Ajouter
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                                
+                                <div class="mt-3">
+                                    <div class="alert alert-info mb-0">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Information :</strong> Cette fonctionnalité permet d'ajouter manuellement des ménages 
+                                        à un employé. Les ménages seront automatiquement associés à la semaine active ou à la date spécifiée.
+                                    </div>
+                                </div>
+                                
+                                <!-- Historique des ajouts manuels récents -->
+                                <?php if (!empty($manual_history)): ?>
+                                <div class="mt-4">
+                                    <h6 class="text-muted mb-3">
+                                        <i class="fas fa-history me-2"></i>
+                                        Historique des ajouts récents (7 derniers jours)
+                                    </h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Employé</th>
+                                                    <th>Ménages</th>
+                                                    <th>Montant</th>
+                                                    <th>Semaine</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($manual_history as $entry): ?>
+                                                <tr>
+                                                    <td>
+                                                        <small class="text-muted">
+                                                            <?php echo date('d/m/Y H:i', strtotime($entry['created_at'])); ?>
+                                                        </small>
+                                                    </td>
+                                                    <td>
+                                                        <?php echo htmlspecialchars($entry['first_name'] . ' ' . $entry['last_name']); ?>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-primary">
+                                                            <?php echo $entry['cleaning_count']; ?> ménage<?php echo $entry['cleaning_count'] > 1 ? 's' : ''; ?>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="text-success fw-bold">
+                                                            <?php echo number_format($entry['total_salary'], 2); ?>$
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($entry['week_number']): ?>
+                                                            <small class="text-muted">Sem. <?php echo $entry['week_number']; ?></small>
+                                                        <?php else: ?>
+                                                            <small class="text-muted">-</small>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 
                 <!-- Graphiques -->
                 <div class="row mb-4">
