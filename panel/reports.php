@@ -19,7 +19,7 @@ $user = $auth->getCurrentUser();
 $db = getDB();
 
 // Paramètres de période
-$period = $_GET['period'] ?? 'month';
+$period = $_GET['period'] ?? 'active_week';
 $custom_start = $_GET['start_date'] ?? '';
 $custom_end = $_GET['end_date'] ?? '';
 $selected_week_id = $_GET['week_id'] ?? null;
@@ -305,6 +305,26 @@ $page_title = 'Rapports et Analyses';
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom CSS -->
     <link href="../assets/css/panel.css" rel="stylesheet">
+    <style>
+        .avatar-sm {
+            width: 40px;
+            height: 40px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .card-header.bg-primary {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+        }
+        .card-header.bg-success {
+            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
+        }
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+        .badge.fs-6 {
+            font-size: 0.875rem !important;
+        }
+    </style>
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
@@ -340,9 +360,9 @@ $page_title = 'Rapports et Analyses';
                             <div class="col-md-4">
                                 <label for="period" class="form-label">Période</label>
                                 <select class="form-select" id="period" name="period" onchange="toggleCustomDates()">
-                                    <option value="today" <?php echo $period === 'today' ? 'selected' : ''; ?>>Aujourd'hui</option>
                                     <option value="active_week" <?php echo $period === 'active_week' ? 'selected' : ''; ?>>Semaine active</option>
                                     <option value="week" <?php echo $period === 'week' ? 'selected' : ''; ?>>Cette semaine</option>
+                                    <option value="today" <?php echo $period === 'today' ? 'selected' : ''; ?>>Aujourd'hui</option>
                                     <option value="month" <?php echo $period === 'month' ? 'selected' : ''; ?>>Ce mois</option>
                                     <option value="quarter" <?php echo $period === 'quarter' ? 'selected' : ''; ?>>Ce trimestre</option>
                                     <option value="year" <?php echo $period === 'year' ? 'selected' : ''; ?>>Cette année</option>
@@ -446,6 +466,131 @@ $page_title = 'Rapports et Analyses';
                                 <i class="fas fa-broom fa-2x text-primary mb-2"></i>
                                 <h5 class="card-title"><?php echo number_format($cleaning_stats['total_cleanings']); ?></h5>
                                 <p class="card-text text-muted">Ménages</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistiques de ménage détaillées -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-broom me-2"></i>
+                                    Statistiques de Ménage - <?php echo $period_label; ?>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <i class="fas fa-calendar-check fa-2x text-success mb-2"></i>
+                                            <h4 class="text-success"><?php echo number_format($cleaning_stats['total_sessions']); ?></h4>
+                                            <p class="text-muted mb-0">Sessions complétées</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <i class="fas fa-broom fa-2x text-primary mb-2"></i>
+                                            <h4 class="text-primary"><?php echo number_format($cleaning_stats['total_cleanings']); ?></h4>
+                                            <p class="text-muted mb-0">Ménages effectués</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <i class="fas fa-dollar-sign fa-2x text-warning mb-2"></i>
+                                            <h4 class="text-warning"><?php echo number_format($cleaning_stats['total_cleaning_salaries'], 2); ?>$</h4>
+                                            <p class="text-muted mb-0">Salaires ménage</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <i class="fas fa-users fa-2x text-info mb-2"></i>
+                                            <h4 class="text-info"><?php echo number_format($cleaning_stats['cleaning_employees']); ?></h4>
+                                            <p class="text-muted mb-0">Employés actifs</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php if ($cleaning_stats['total_sessions'] > 0): ?>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="fas fa-chart-bar me-2"></i>
+                                            <strong>Moyenne par session :</strong> <?php echo number_format($cleaning_stats['avg_cleanings_per_session'], 1); ?> ménages
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="alert alert-success mb-0">
+                                            <i class="fas fa-calculator me-2"></i>
+                                            <strong>Salaire moyen :</strong> <?php echo number_format($cleaning_stats['total_cleaning_salaries'] / $cleaning_stats['total_sessions'], 2); ?>$ par session
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Top Employés Ménage -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-broom me-2"></i>
+                                    Top Employés (Ménages) - <?php echo $period_label; ?>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (!empty($top_cleaning_employees)): ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th><i class="fas fa-user me-1"></i>Employé</th>
+                                                    <th class="text-center"><i class="fas fa-calendar-check me-1"></i>Sessions</th>
+                                                    <th class="text-center"><i class="fas fa-broom me-1"></i>Ménages</th>
+                                                    <th class="text-center"><i class="fas fa-dollar-sign me-1"></i>Salaire</th>
+                                                    <th class="text-center"><i class="fas fa-chart-bar me-1"></i>Moyenne/Session</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($top_cleaning_employees as $employee): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                                    <?php echo strtoupper(substr($employee['first_name'], 0, 1) . substr($employee['last_name'], 0, 1)); ?>
+                                                                </div>
+                                                                <div>
+                                                                    <strong><?php echo htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']); ?></strong>
+                                                                    <br><small class="text-muted"><?php echo $employee['role']; ?></small>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-center"><span class="badge bg-secondary fs-6"><?php echo number_format($employee['sessions_count']); ?></span></td>
+                                                        <td class="text-center"><span class="badge bg-primary fs-6"><?php echo number_format($employee['total_cleanings']); ?></span></td>
+                                                        <td class="text-center"><span class="text-success fw-bold"><?php echo number_format($employee['total_salary'], 2); ?>$</span></td>
+                                                        <td class="text-center">
+                                                            <?php if ($employee['sessions_count'] > 0): ?>
+                                                                <span class="badge bg-info fs-6"><?php echo number_format($employee['total_cleanings'] / $employee['sessions_count'], 1); ?></span>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-broom fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Aucune session de ménage sur cette période</p>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -561,48 +706,7 @@ $page_title = 'Rapports et Analyses';
                 </div>
                 
                 <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-broom me-2"></i>
-                                    Top Employés (Ménages)
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <?php if (!empty($top_cleaning_employees)): ?>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Employé</th>
-                                                    <th>Sessions</th>
-                                                    <th>Ménages</th>
-                                                    <th>Salaire</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($top_cleaning_employees as $employee): ?>
-                                                    <tr>
-                                                        <td>
-                                                            <?php echo htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']); ?>
-                                                            <br><small class="text-muted"><?php echo $employee['role']; ?></small>
-                                                        </td>
-                                                        <td><span class="badge bg-secondary"><?php echo number_format($employee['sessions_count']); ?></span></td>
-                                                        <td><span class="badge bg-primary"><?php echo number_format($employee['total_cleanings']); ?></span></td>
-                                                        <td><span class="text-success fw-bold"><?php echo number_format($employee['total_salary'], 2); ?>$</span></td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                <?php else: ?>
-                                    <p class="text-muted text-center">Aucune session de ménage sur cette période</p>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0">
