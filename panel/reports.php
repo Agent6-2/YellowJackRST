@@ -763,7 +763,7 @@ $page_title = 'Rapports et Analyses';
                                             Nombre de ménages *
                                         </label>
                                         <input type="number" class="form-control" id="cleaning_count" name="cleaning_count" 
-                                               min="1" max="50" required placeholder="Ex: 5">
+                                               min="1" required placeholder="Ex: 5">
                                         <div class="form-text">Tarif: 60$ par ménage</div>
                                     </div>
                                     
