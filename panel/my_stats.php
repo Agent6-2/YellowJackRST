@@ -8,6 +8,7 @@
 
 require_once '../config/database.php';
 require_once '../includes/auth.php';
+require_once '../includes/week_functions.php';
 requireLogin();
 
 $auth = getAuth();
@@ -18,10 +19,10 @@ $db = getDB();
 if ($_POST && isset($_POST['update_goals'])) {
     try {
         $goals_to_update = [
-            'menages_mensuel' => floatval($_POST['menages_mensuel'] ?? 0),
-            'salaire_mensuel' => floatval($_POST['salaire_mensuel'] ?? 0),
-            'ventes_mensuelles' => floatval($_POST['ventes_mensuelles'] ?? 0),
-            'commissions_mensuelles' => floatval($_POST['commissions_mensuelles'] ?? 0)
+            'menages_hebdomadaire' => floatval($_POST['menages_hebdomadaire'] ?? 0),
+            'salaire_hebdomadaire' => floatval($_POST['salaire_hebdomadaire'] ?? 0),
+            'ventes_hebdomadaires' => floatval($_POST['ventes_hebdomadaires'] ?? 0),
+            'commissions_hebdomadaires' => floatval($_POST['commissions_hebdomadaires'] ?? 0)
         ];
         
         foreach ($goals_to_update as $goal_type => $target_value) {
@@ -41,11 +42,12 @@ if ($_POST && isset($_POST['update_goals'])) {
     }
 }
 
-// Période par défaut (ce mois)
-$period = $_GET['period'] ?? 'month';
+// Période par défaut (semaine active)
+$period = $_GET['period'] ?? 'active_week';
 $start_date = '';
 $end_date = '';
 $period_label = '';
+$selected_week_id = null;
 
 // Calculer les dates selon la période
 switch ($period) {
@@ -53,6 +55,42 @@ switch ($period) {
         $start_date = date('Y-m-d');
         $end_date = date('Y-m-d');
         $period_label = "Aujourd'hui";
+        break;
+    case 'active_week':
+        $activeWeek = getActiveWeekNew();
+        if ($activeWeek) {
+            $start_date = $activeWeek['week_start'];
+            $end_date = $activeWeek['week_end'];
+            $period_label = "Semaine active (S" . $activeWeek['week_number'] . ")";
+            $selected_week_id = $activeWeek['id'];
+        } else {
+            // Fallback sur cette semaine si pas de semaine active
+            $start_date = date('Y-m-d', strtotime('monday this week'));
+            $end_date = date('Y-m-d', strtotime('sunday this week'));
+            $period_label = "Cette semaine";
+        }
+        break;
+    case 'specific_week':
+        $week_id = $_GET['week_id'] ?? null;
+        if ($week_id) {
+            $week = getWeekById($week_id);
+            if ($week) {
+                $start_date = $week['week_start'];
+                $end_date = $week['week_end'];
+                $period_label = "Semaine " . $week['week_number'];
+                $selected_week_id = $week['id'];
+            }
+        }
+        if (!$selected_week_id) {
+            // Fallback sur semaine active
+            $activeWeek = getActiveWeekNew();
+            if ($activeWeek) {
+                $start_date = $activeWeek['week_start'];
+                $end_date = $activeWeek['week_end'];
+                $period_label = "Semaine active (S" . $activeWeek['week_number'] . ")";
+                $selected_week_id = $activeWeek['id'];
+            }
+        }
         break;
     case 'week':
         $start_date = date('Y-m-d', strtotime('monday this week'));
@@ -213,10 +251,10 @@ try {
     
     // Valeurs par défaut si aucun objectif défini
     $default_goals = [
-        'menages_mensuel' => 100,
-        'salaire_mensuel' => 2000,
-        'ventes_mensuelles' => 50,
-        'commissions_mensuelles' => 500
+        'menages_hebdomadaire' => 25,
+        'salaire_hebdomadaire' => 500,
+        'ventes_hebdomadaires' => 12,
+        'commissions_hebdomadaires' => 125
     ];
     
     foreach ($default_goals as $goal_type => $default_value) {
@@ -227,22 +265,22 @@ try {
 } catch (Exception $e) {
     // En cas d'erreur, utiliser les valeurs par défaut
     $objectifs = [
-        'menages_mensuel' => 100,
-        'salaire_mensuel' => 2000,
-        'ventes_mensuelles' => 50,
-        'commissions_mensuelles' => 500
+        'menages_hebdomadaire' => 25,
+        'salaire_hebdomadaire' => 500,
+        'ventes_hebdomadaires' => 12,
+        'commissions_hebdomadaires' => 125
     ];
 }
 
 // Calcul des pourcentages d'objectifs
 $progress = [];
-if ($period === 'month') {
-    $progress['menages'] = $cleaning_stats['total_menages'] > 0 ? min(100, ($cleaning_stats['total_menages'] / $objectifs['menages_mensuel']) * 100) : 0;
-    $progress['salaire'] = $cleaning_stats['total_salaire'] > 0 ? min(100, ($cleaning_stats['total_salaire'] / $objectifs['salaire_mensuel']) * 100) : 0;
+if ($period === 'active_week' || $period === 'specific_week' || $period === 'week') {
+    $progress['menages'] = $cleaning_stats['total_menages'] > 0 ? min(100, ($cleaning_stats['total_menages'] / $objectifs['menages_hebdomadaire']) * 100) : 0;
+    $progress['salaire'] = $cleaning_stats['total_salaire'] > 0 ? min(100, ($cleaning_stats['total_salaire'] / $objectifs['salaire_hebdomadaire']) * 100) : 0;
     
     if ($auth->canAccessCashRegister()) {
-        $progress['ventes'] = $sales_stats['total_ventes'] > 0 ? min(100, ($sales_stats['total_ventes'] / $objectifs['ventes_mensuelles']) * 100) : 0;
-        $progress['commissions'] = $sales_stats['commissions_total'] > 0 ? min(100, ($sales_stats['commissions_total'] / $objectifs['commissions_mensuelles']) * 100) : 0;
+        $progress['ventes'] = $sales_stats['total_ventes'] > 0 ? min(100, ($sales_stats['total_ventes'] / $objectifs['ventes_hebdomadaires']) * 100) : 0;
+        $progress['commissions'] = $sales_stats['commissions_total'] > 0 ? min(100, ($sales_stats['commissions_total'] / $objectifs['commissions_hebdomadaires']) * 100) : 0;
     }
 }
 
@@ -309,11 +347,25 @@ $page_title = "Mes Statistiques";
                                 <label for="period" class="form-label">Période</label>
                                 <select class="form-select" id="period" name="period" onchange="toggleCustomDates()">
                                     <option value="today" <?php echo $period === 'today' ? 'selected' : ''; ?>>Aujourd'hui</option>
+                                    <option value="active_week" <?php echo $period === 'active_week' ? 'selected' : ''; ?>>Semaine active</option>
                                     <option value="week" <?php echo $period === 'week' ? 'selected' : ''; ?>>Cette semaine</option>
                                     <option value="month" <?php echo $period === 'month' ? 'selected' : ''; ?>>Ce mois</option>
                                     <option value="quarter" <?php echo $period === 'quarter' ? 'selected' : ''; ?>>Ce trimestre</option>
                                     <option value="year" <?php echo $period === 'year' ? 'selected' : ''; ?>>Cette année</option>
                                     <option value="custom" <?php echo $period === 'custom' ? 'selected' : ''; ?>>Période personnalisée</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3" id="week_selector_group" style="display: <?php echo $period === 'specific_week' ? 'block' : 'none'; ?>">
+                                <label for="week_id" class="form-label">Semaine spécifique</label>
+                                <select class="form-select" id="week_id" name="week_id">
+                                    <?php 
+                                    $all_weeks = getAllWeeks();
+                                    foreach ($all_weeks as $week): 
+                                    ?>
+                                        <option value="<?php echo $week['id']; ?>" <?php echo $selected_week_id == $week['id'] ? 'selected' : ''; ?>>
+                                            Semaine <?php echo $week['week_number']; ?> (<?php echo formatDate($week['week_start']); ?> - <?php echo formatDate($week['week_end']); ?>)
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-3" id="start_date_group" style="display: <?php echo $period === 'custom' ? 'block' : 'none'; ?>">
@@ -438,13 +490,13 @@ $page_title = "Mes Statistiques";
                 </div>
                 <?php endif; ?>
                 
-                <!-- Objectifs mensuels -->
-                <?php if ($period === 'month'): ?>
+                <!-- Objectifs hebdomadaires -->
+                <?php if ($period === 'active_week' || $period === 'specific_week' || $period === 'week'): ?>
                 <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-target me-2"></i>
-                            Progression vers les objectifs mensuels
+                            Progression vers les objectifs hebdomadaires
                         </h5>
                         <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#goalsModal">
                             <i class="fas fa-edit me-1"></i>
@@ -457,23 +509,23 @@ $page_title = "Mes Statistiques";
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between">
                                         <span>Ménages</span>
-                                        <span><?php echo number_format($cleaning_stats['total_menages']); ?> / <?php echo $objectifs['menages_mensuel']; ?></span>
+                                        <span><?php echo number_format($cleaning_stats['total_menages']); ?> / <?php echo $objectifs['menages_hebdomadaire']; ?></span>
                                     </div>
                                     <div class="progress">
                                         <div class="progress-bar bg-success" style="width: <?php echo $progress['menages']; ?>%"></div>
                                     </div>
-                                    <small class="text-muted"><?php echo number_format($progress['menages'], 1); ?>% de l'objectif</small>
+                                    <small class="text-muted"><?php echo number_format($progress['menages'], 1); ?>% de l'objectif hebdomadaire</small>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between">
                                         <span>Salaire ménage</span>
-                                        <span><?php echo number_format($cleaning_stats['total_salaire'], 2); ?>$ / <?php echo $objectifs['salaire_mensuel']; ?>$</span>
+                                        <span><?php echo number_format($cleaning_stats['total_salaire'], 2); ?>$ / <?php echo $objectifs['salaire_hebdomadaire']; ?>$</span>
                                     </div>
                                     <div class="progress">
                                         <div class="progress-bar bg-info" style="width: <?php echo $progress['salaire']; ?>%"></div>
                                     </div>
-                                    <small class="text-muted"><?php echo number_format($progress['salaire'], 1); ?>% de l'objectif</small>
+                                    <small class="text-muted"><?php echo number_format($progress['salaire'], 1); ?>% de l'objectif hebdomadaire</small>
                                 </div>
                             </div>
                             
@@ -482,23 +534,23 @@ $page_title = "Mes Statistiques";
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between">
                                         <span>Ventes</span>
-                                        <span><?php echo number_format($sales_stats['total_ventes']); ?> / <?php echo $objectifs['ventes_mensuelles']; ?></span>
+                                        <span><?php echo number_format($sales_stats['total_ventes']); ?> / <?php echo $objectifs['ventes_hebdomadaires']; ?></span>
                                     </div>
                                     <div class="progress">
                                         <div class="progress-bar bg-warning" style="width: <?php echo $progress['ventes']; ?>%"></div>
                                     </div>
-                                    <small class="text-muted"><?php echo number_format($progress['ventes'], 1); ?>% de l'objectif</small>
+                                    <small class="text-muted"><?php echo number_format($progress['ventes'], 1); ?>% de l'objectif hebdomadaire</small>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <div class="d-flex justify-content-between">
                                         <span>Commissions</span>
-                                        <span><?php echo number_format($sales_stats['commissions_total'], 2); ?>$ / <?php echo $objectifs['commissions_mensuelles']; ?>$</span>
+                                        <span><?php echo number_format($sales_stats['commissions_total'], 2); ?>$ / <?php echo $objectifs['commissions_hebdomadaires']; ?>$</span>
                                     </div>
                                     <div class="progress">
                                         <div class="progress-bar bg-danger" style="width: <?php echo $progress['commissions']; ?>%"></div>
                                     </div>
-                                    <small class="text-muted"><?php echo number_format($progress['commissions'], 1); ?>% de l'objectif</small>
+                                    <small class="text-muted"><?php echo number_format($progress['commissions'], 1); ?>% de l'objectif hebdomadaire</small>
                                 </div>
                             </div>
                             <?php endif; ?>
@@ -700,7 +752,7 @@ $page_title = "Mes Statistiques";
                 <div class="modal-header">
                     <h5 class="modal-title" id="goalsModalLabel">
                         <i class="fas fa-target me-2"></i>
-                        Gestion des objectifs mensuels
+                        Gestion des objectifs hebdomadaires
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -713,14 +765,14 @@ $page_title = "Mes Statistiques";
                                     Objectifs Ménage
                                 </h6>
                                 <div class="mb-3">
-                                    <label for="menages_mensuel" class="form-label">Nombre de ménages par mois</label>
-                                    <input type="number" class="form-control" id="menages_mensuel" name="menages_mensuel" 
-                                           value="<?php echo $objectifs['menages_mensuel']; ?>" min="0" step="1">
+                                    <label for="menages_hebdomadaire" class="form-label">Nombre de ménages par semaine</label>
+                                    <input type="number" class="form-control" id="menages_hebdomadaire" name="menages_hebdomadaire" 
+                                           value="<?php echo $objectifs['menages_hebdomadaire']; ?>" min="0" step="1">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="salaire_mensuel" class="form-label">Salaire ménage mensuel ($)</label>
-                                    <input type="number" class="form-control" id="salaire_mensuel" name="salaire_mensuel" 
-                                           value="<?php echo $objectifs['salaire_mensuel']; ?>" min="0" step="0.01">
+                                    <label for="salaire_hebdomadaire" class="form-label">Salaire ménage hebdomadaire ($)</label>
+                                    <input type="number" class="form-control" id="salaire_hebdomadaire" name="salaire_hebdomadaire" 
+                                           value="<?php echo $objectifs['salaire_hebdomadaire']; ?>" min="0" step="0.01">
                                 </div>
                             </div>
                             <?php if ($auth->canAccessCashRegister()): ?>
@@ -730,14 +782,14 @@ $page_title = "Mes Statistiques";
                                     Objectifs Vente
                                 </h6>
                                 <div class="mb-3">
-                                    <label for="ventes_mensuelles" class="form-label">Nombre de ventes par mois</label>
-                                    <input type="number" class="form-control" id="ventes_mensuelles" name="ventes_mensuelles" 
-                                           value="<?php echo $objectifs['ventes_mensuelles']; ?>" min="0" step="1">
+                                    <label for="ventes_hebdomadaires" class="form-label">Nombre de ventes par semaine</label>
+                                    <input type="number" class="form-control" id="ventes_hebdomadaires" name="ventes_hebdomadaires" 
+                                           value="<?php echo $objectifs['ventes_hebdomadaires']; ?>" min="0" step="1">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="commissions_mensuelles" class="form-label">Commissions mensuelles ($)</label>
-                                    <input type="number" class="form-control" id="commissions_mensuelles" name="commissions_mensuelles" 
-                                           value="<?php echo $objectifs['commissions_mensuelles']; ?>" min="0" step="0.01">
+                                    <label for="commissions_hebdomadaires" class="form-label">Commissions hebdomadaires ($)</label>
+                                    <input type="number" class="form-control" id="commissions_hebdomadaires" name="commissions_hebdomadaires" 
+                                           value="<?php echo $objectifs['commissions_hebdomadaires']; ?>" min="0" step="0.01">
                                 </div>
                             </div>
                             <?php endif; ?>
