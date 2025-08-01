@@ -1,0 +1,43 @@
+# Configuration Apache pour le dossier bot Discord
+
+# Bloquer l'accès à tous les fichiers par défaut
+Order Deny,Allow
+Deny from all
+
+# Autoriser l'accès uniquement au bot Discord
+<Files "discord_bot.php">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# Bloquer l'accès aux fichiers sensibles
+<Files "*.md">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+<Files "register_commands.php">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+<Files "test_bot.php">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Désactiver l'affichage des répertoires
+Options -Indexes
+
+# Protection contre les attaques
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Limiter les méthodes HTTP autorisées
+<LimitExcept POST>
+    Order Deny,Allow
+    Deny from all
+</LimitExcept>

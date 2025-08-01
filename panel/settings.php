@@ -132,6 +132,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 break;
                 
+            case 'bot_action':
+                $bot_action = $_POST['bot_action'] ?? '';
+                
+                switch ($bot_action) {
+                    case 'start':
+                        // Vérifier si le bot est déjà en cours d'exécution
+                        $bot_status = shell_exec('tasklist /FI "IMAGENAME eq php.exe" /FO CSV 2>NUL | find /C "php.exe"');
+                        if (intval($bot_status) > 0) {
+                            $error = 'Le bot Discord semble déjà être en cours d\'exécution.';
+                        } else {
+                            // Démarrer le bot en arrière-plan
+                            $bot_path = realpath('../bot/discord_bot.php');
+                            if ($bot_path && file_exists($bot_path)) {
+                                $command = 'start /B php "' . $bot_path . '" > NUL 2>&1';
+                                shell_exec($command);
+                                $message = 'Bot Discord démarré avec succès !';
+                            } else {
+                                $error = 'Fichier du bot Discord introuvable.';
+                            }
+                        }
+                        break;
+                        
+                    case 'stop':
+                        // Arrêter tous les processus PHP (attention : cela peut affecter d'autres scripts)
+                        $result = shell_exec('taskkill /F /IM php.exe 2>NUL');
+                        $message = 'Tentative d\'arrêt du bot Discord effectuée.';
+                        break;
+                        
+                    case 'restart':
+                        // Arrêter puis redémarrer
+                        shell_exec('taskkill /F /IM php.exe 2>NUL');
+                        sleep(2); // Attendre 2 secondes
+                        $bot_path = realpath('../bot/discord_bot.php');
+                        if ($bot_path && file_exists($bot_path)) {
+                            $command = 'start /B php "' . $bot_path . '" > NUL 2>&1';
+                            shell_exec($command);
+                            $message = 'Bot Discord redémarré avec succès !';
+                        } else {
+                            $error = 'Fichier du bot Discord introuvable pour le redémarrage.';
+                        }
+                        break;
+                        
+                    case 'register_commands':
+                        // Enregistrer les commandes Discord
+                        $register_path = realpath('../bot/register_commands.php');
+                        if ($register_path && file_exists($register_path)) {
+                            $output = shell_exec('php "' . $register_path . '" 2>&1');
+                            if (strpos($output, 'success') !== false || strpos($output, 'Commands registered') !== false) {
+                                $message = 'Commandes Discord enregistrées avec succès !';
+                            } else {
+                                $error = 'Erreur lors de l\'enregistrement des commandes : ' . $output;
+                            }
+                        } else {
+                            $error = 'Fichier d\'enregistrement des commandes introuvable.';
+                        }
+                        break;
+                        
+                    default:
+                        $error = 'Action de bot inconnue.';
+                        break;
+                }
+                break;
+                
             case 'update_commissions':
                 // Récupérer tous les paramètres de commission
                 $commission_settings = [
@@ -607,11 +670,12 @@ $page_title = 'Configuration et Paramètres';
                     
                     <!-- Onglet Discord -->
                     <div class="tab-pane fade" id="discord" role="tabpanel">
+                        <!-- Configuration Webhook -->
                         <div class="card mt-3">
                             <div class="card-header">
                                 <h5 class="mb-0">
                                     <i class="fab fa-discord me-2"></i>
-                                    Configuration Discord
+                                    Configuration Discord Webhook
                                 </h5>
                             </div>
                             <div class="card-body">
@@ -651,6 +715,172 @@ $page_title = 'Configuration et Paramètres';
                                         </button>
                                     </div>
                                 </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Gestion du Bot Discord -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-robot me-2"></i>
+                                    Gestion du Bot Discord
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Attention :</strong> Le bot Discord doit être configuré et les commandes enregistrées avant utilisation.
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Statut du Bot
+                                        </h6>
+                                        
+                                        <div class="card bg-light">
+                                            <div class="card-body text-center">
+                                                <?php
+                                                // Vérifier le statut du bot
+                                                $bot_status = shell_exec('tasklist /FI "IMAGENAME eq php.exe" /FO CSV 2>NUL | find /C "php.exe"');
+                                                $is_running = intval($bot_status) > 0;
+                                                ?>
+                                                
+                                                <div class="mb-3">
+                                                    <?php if ($is_running): ?>
+                                                        <i class="fas fa-circle text-success fa-2x"></i>
+                                                        <h6 class="text-success mt-2">Bot en ligne</h6>
+                                                        <small class="text-muted">Le bot Discord est actif</small>
+                                                    <?php else: ?>
+                                                        <i class="fas fa-circle text-danger fa-2x"></i>
+                                                        <h6 class="text-danger mt-2">Bot hors ligne</h6>
+                                                        <small class="text-muted">Le bot Discord n'est pas actif</small>
+                                                    <?php endif; ?>
+                                                </div>
+                                                
+                                                <div class="small text-muted">
+                                                    <strong>Dernière vérification :</strong><br>
+                                                    <?php echo date('d/m/Y H:i:s'); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="fas fa-cogs me-2"></i>
+                                            Actions du Bot
+                                        </h6>
+                                        
+                                        <div class="d-grid gap-2">
+                                            <!-- Démarrer le bot -->
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                                <input type="hidden" name="action" value="bot_action">
+                                                <input type="hidden" name="bot_action" value="start">
+                                                <button type="submit" class="btn btn-success w-100" 
+                                                        <?php echo $is_running ? 'disabled' : ''; ?>
+                                                        onclick="return confirm('Démarrer le bot Discord ?')">
+                                                    <i class="fas fa-play me-2"></i>
+                                                    Démarrer le Bot
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- Arrêter le bot -->
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                                <input type="hidden" name="action" value="bot_action">
+                                                <input type="hidden" name="bot_action" value="stop">
+                                                <button type="submit" class="btn btn-danger w-100" 
+                                                        <?php echo !$is_running ? 'disabled' : ''; ?>
+                                                        onclick="return confirm('Arrêter le bot Discord ?')">
+                                                    <i class="fas fa-stop me-2"></i>
+                                                    Arrêter le Bot
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- Redémarrer le bot -->
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                                <input type="hidden" name="action" value="bot_action">
+                                                <input type="hidden" name="bot_action" value="restart">
+                                                <button type="submit" class="btn btn-warning w-100" 
+                                                        onclick="return confirm('Redémarrer le bot Discord ?')">
+                                                    <i class="fas fa-redo me-2"></i>
+                                                    Redémarrer le Bot
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- Enregistrer les commandes -->
+                                            <form method="POST" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                                <input type="hidden" name="action" value="bot_action">
+                                                <input type="hidden" name="bot_action" value="register_commands">
+                                                <button type="submit" class="btn btn-info w-100" 
+                                                        onclick="return confirm('Enregistrer les commandes Discord ?')">
+                                                    <i class="fas fa-terminal me-2"></i>
+                                                    Enregistrer les Commandes
+                                                </button>
+                                            </form>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                <strong>Note :</strong> Enregistrez les commandes après chaque modification du bot.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Informations sur le bot -->
+                                <div class="row mt-4">
+                                    <div class="col-12">
+                                        <h6 class="text-muted mb-3">
+                                            <i class="fas fa-file-alt me-2"></i>
+                                            Informations du Bot
+                                        </h6>
+                                        
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered">
+                                                <tr>
+                                                    <td><strong>Fichier principal :</strong></td>
+                                                    <td>
+                                                        <?php 
+                                                        $bot_file = '../bot/discord_bot.php';
+                                                        echo file_exists($bot_file) ? 
+                                                            '<span class="badge bg-success">Présent</span> ' . realpath($bot_file) : 
+                                                            '<span class="badge bg-danger">Manquant</span> ' . $bot_file;
+                                                        ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Enregistrement des commandes :</strong></td>
+                                                    <td>
+                                                        <?php 
+                                                        $register_file = '../bot/register_commands.php';
+                                                        echo file_exists($register_file) ? 
+                                                            '<span class="badge bg-success">Présent</span> ' . realpath($register_file) : 
+                                                            '<span class="badge bg-danger">Manquant</span> ' . $register_file;
+                                                        ?>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Configuration :</strong></td>
+                                                    <td>
+                                                        <?php 
+                                                        $config_file = '../config/database.php';
+                                                        echo file_exists($config_file) ? 
+                                                            '<span class="badge bg-success">Présent</span>' : 
+                                                            '<span class="badge bg-danger">Manquant</span>';
+                                                        ?>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
