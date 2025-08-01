@@ -136,41 +136,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $bot_action = $_POST['bot_action'] ?? '';
                 
                 switch ($bot_action) {
-                    case 'start':
-                        // Vérifier si le bot est déjà en cours d'exécution
-                        $bot_status = shell_exec('tasklist /FI "IMAGENAME eq php.exe" /FO CSV 2>NUL | find /C "php.exe"');
-                        if (intval($bot_status) > 0) {
-                            $error = 'Le bot Discord semble déjà être en cours d\'exécution.';
-                        } else {
-                            // Démarrer le bot en arrière-plan
-                            $bot_path = realpath('../bot/discord_bot.php');
-                            if ($bot_path && file_exists($bot_path)) {
-                                $command = 'start /B php "' . $bot_path . '" > NUL 2>&1';
-                                shell_exec($command);
-                                $message = 'Bot Discord démarré avec succès !';
-                            } else {
-                                $error = 'Fichier du bot Discord introuvable.';
-                            }
-                        }
-                        break;
+                    case 'test_webhook':
+                        // Tester la connectivité du webhook Discord
+                        $bot_url = 'https://yellow-jack.wstr.fr/bot/discord_bot.php';
+                        $ch = curl_init();
+                        curl_setopt($ch, CURLOPT_URL, $bot_url);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+                        $response = curl_exec($ch);
+                        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
                         
-                    case 'stop':
-                        // Arrêter tous les processus PHP (attention : cela peut affecter d'autres scripts)
-                        $result = shell_exec('taskkill /F /IM php.exe 2>NUL');
-                        $message = 'Tentative d\'arrêt du bot Discord effectuée.';
-                        break;
-                        
-                    case 'restart':
-                        // Arrêter puis redémarrer
-                        shell_exec('taskkill /F /IM php.exe 2>NUL');
-                        sleep(2); // Attendre 2 secondes
-                        $bot_path = realpath('../bot/discord_bot.php');
-                        if ($bot_path && file_exists($bot_path)) {
-                            $command = 'start /B php "' . $bot_path . '" > NUL 2>&1';
-                            shell_exec($command);
-                            $message = 'Bot Discord redémarré avec succès !';
+                        if ($http_code === 405) {
+                            $message = 'Bot Discord accessible ! (HTTP 405 - Méthode non autorisée est normal)';
+                        } elseif ($http_code === 200) {
+                            $message = 'Bot Discord accessible et fonctionnel !';
                         } else {
-                            $error = 'Fichier du bot Discord introuvable pour le redémarrage.';
+                            $error = 'Bot Discord non accessible. Code HTTP: ' . $http_code;
                         }
                         break;
                         
@@ -179,13 +162,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $register_path = realpath('../bot/register_commands.php');
                         if ($register_path && file_exists($register_path)) {
                             $output = shell_exec('php "' . $register_path . '" 2>&1');
-                            if (strpos($output, 'success') !== false || strpos($output, 'Commands registered') !== false) {
+                            if (strpos($output, 'success') !== false || strpos($output, 'Commands registered') !== false || strpos($output, 'succès') !== false) {
                                 $message = 'Commandes Discord enregistrées avec succès !';
                             } else {
                                 $error = 'Erreur lors de l\'enregistrement des commandes : ' . $output;
                             }
                         } else {
                             $error = 'Fichier d\'enregistrement des commandes introuvable.';
+                        }
+                        break;
+                        
+                    case 'check_config':
+                        // Vérifier la configuration Discord
+                        $config_issues = [];
+                        
+                        if (!defined('DISCORD_BOT_TOKEN') || empty(DISCORD_BOT_TOKEN)) {
+                            $config_issues[] = 'Token du bot Discord manquant';
+                        }
+                        
+                        if (!defined('DISCORD_APPLICATION_ID') || empty(DISCORD_APPLICATION_ID)) {
+                            $config_issues[] = 'ID de l\'application Discord manquant';
+                        }
+                        
+                        if (!defined('DISCORD_CLIENT_PUBLIC_KEY') || empty(DISCORD_CLIENT_PUBLIC_KEY)) {
+                            $config_issues[] = 'Clé publique Discord manquante';
+                        }
+                        
+                        if (empty($config_issues)) {
+                            $message = 'Configuration Discord complète et valide !';
+                        } else {
+                            $error = 'Problèmes de configuration : ' . implode(', ', $config_issues);
                         }
                         break;
                         
@@ -742,24 +748,35 @@ $page_title = 'Configuration et Paramètres';
                                         <div class="card bg-light">
                                             <div class="card-body text-center">
                                                 <?php
-                                                // Vérifier le statut du bot
-                                                $bot_status = shell_exec('tasklist /FI "IMAGENAME eq php.exe" /FO CSV 2>NUL | find /C "php.exe"');
-                                                $is_running = intval($bot_status) > 0;
+                                                // Vérifier le statut du bot via HTTP
+                                                $bot_url = 'https://yellow-jack.wstr.fr/bot/discord_bot.php';
+                                                $ch = curl_init();
+                                                curl_setopt($ch, CURLOPT_URL, $bot_url);
+                                                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                                                curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                                                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+                                                $response = curl_exec($ch);
+                                                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                                                curl_close($ch);
+                                                
+                                                $is_accessible = ($http_code === 405 || $http_code === 200);
                                                 ?>
                                                 
                                                 <div class="mb-3">
-                                                    <?php if ($is_running): ?>
+                                                    <?php if ($is_accessible): ?>
                                                         <i class="fas fa-circle text-success fa-2x"></i>
-                                                        <h6 class="text-success mt-2">Bot en ligne</h6>
-                                                        <small class="text-muted">Le bot Discord est actif</small>
+                                                        <h6 class="text-success mt-2">Bot accessible</h6>
+                                                        <small class="text-muted">Le webhook Discord est fonctionnel</small>
                                                     <?php else: ?>
                                                         <i class="fas fa-circle text-danger fa-2x"></i>
-                                                        <h6 class="text-danger mt-2">Bot hors ligne</h6>
-                                                        <small class="text-muted">Le bot Discord n'est pas actif</small>
+                                                        <h6 class="text-danger mt-2">Bot non accessible</h6>
+                                                        <small class="text-muted">Le webhook Discord n'est pas accessible</small>
                                                     <?php endif; ?>
                                                 </div>
                                                 
                                                 <div class="small text-muted">
+                                                    <strong>URL :</strong> <?php echo $bot_url; ?><br>
+                                                    <strong>Code HTTP :</strong> <?php echo $http_code ?: 'Erreur'; ?><br>
                                                     <strong>Dernière vérification :</strong><br>
                                                     <?php echo date('d/m/Y H:i:s'); ?>
                                                 </div>
@@ -774,41 +791,25 @@ $page_title = 'Configuration et Paramètres';
                                         </h6>
                                         
                                         <div class="d-grid gap-2">
-                                            <!-- Démarrer le bot -->
+                                            <!-- Tester le webhook -->
                                             <form method="POST" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
                                                 <input type="hidden" name="action" value="bot_action">
-                                                <input type="hidden" name="bot_action" value="start">
-                                                <button type="submit" class="btn btn-success w-100" 
-                                                        <?php echo $is_running ? 'disabled' : ''; ?>
-                                                        onclick="return confirm('Démarrer le bot Discord ?')">
-                                                    <i class="fas fa-play me-2"></i>
-                                                    Démarrer le Bot
+                                                <input type="hidden" name="bot_action" value="test_webhook">
+                                                <button type="submit" class="btn btn-primary w-100">
+                                                    <i class="fas fa-globe me-2"></i>
+                                                    Tester le Webhook
                                                 </button>
                                             </form>
                                             
-                                            <!-- Arrêter le bot -->
+                                            <!-- Vérifier la configuration -->
                                             <form method="POST" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
                                                 <input type="hidden" name="action" value="bot_action">
-                                                <input type="hidden" name="bot_action" value="stop">
-                                                <button type="submit" class="btn btn-danger w-100" 
-                                                        <?php echo !$is_running ? 'disabled' : ''; ?>
-                                                        onclick="return confirm('Arrêter le bot Discord ?')">
-                                                    <i class="fas fa-stop me-2"></i>
-                                                    Arrêter le Bot
-                                                </button>
-                                            </form>
-                                            
-                                            <!-- Redémarrer le bot -->
-                                            <form method="POST" class="d-inline">
-                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
-                                                <input type="hidden" name="action" value="bot_action">
-                                                <input type="hidden" name="bot_action" value="restart">
-                                                <button type="submit" class="btn btn-warning w-100" 
-                                                        onclick="return confirm('Redémarrer le bot Discord ?')">
-                                                    <i class="fas fa-redo me-2"></i>
-                                                    Redémarrer le Bot
+                                                <input type="hidden" name="bot_action" value="check_config">
+                                                <button type="submit" class="btn btn-info w-100">
+                                                    <i class="fas fa-cog me-2"></i>
+                                                    Vérifier la Configuration
                                                 </button>
                                             </form>
                                             
@@ -817,7 +818,7 @@ $page_title = 'Configuration et Paramètres';
                                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
                                                 <input type="hidden" name="action" value="bot_action">
                                                 <input type="hidden" name="bot_action" value="register_commands">
-                                                <button type="submit" class="btn btn-info w-100" 
+                                                <button type="submit" class="btn btn-success w-100" 
                                                         onclick="return confirm('Enregistrer les commandes Discord ?')">
                                                     <i class="fas fa-terminal me-2"></i>
                                                     Enregistrer les Commandes
