@@ -146,8 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         } else {
                             // Démarrer le bot daemon
                             $bot_path = realpath('../bot/bot_daemon.php');
-                            if ($bot_path && file_exists($bot_path)) {
-                                $cmd = 'start /B php "' . $bot_path . '" > nul 2>&1';
+                            $php_path = realpath('../php/php.exe');
+                            if ($bot_path && file_exists($bot_path) && $php_path && file_exists($php_path)) {
+                                $cmd = 'start /B "' . $php_path . '" "' . $bot_path . '" > nul 2>&1';
                                 shell_exec($cmd);
                                 
                                 // Attendre un peu et vérifier si le bot a démarré
@@ -205,8 +206,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     case 'register_commands':
                         // Enregistrer les commandes Discord
                         $register_path = realpath('../bot/register_commands.php');
-                        if ($register_path && file_exists($register_path)) {
-                            $output = shell_exec('php "' . $register_path . '" 2>&1');
+                        $php_path = realpath('../php/php.exe');
+                        if ($register_path && file_exists($register_path) && $php_path && file_exists($php_path)) {
+                            $output = shell_exec('"' . $php_path . '" "' . $register_path . '" 2>&1');
                             if (strpos($output, 'success') !== false || strpos($output, 'Commands registered') !== false || strpos($output, 'succès') !== false) {
                                 $message = 'Commandes Discord enregistrées avec succès !';
                             } else {

@@ -75,13 +75,21 @@ class YellowjackDiscordDaemon {
             'Authorization: Bot ' . $this->bot_token,
             'Content-Type: application/json'
         ]);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         
         $response = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curl_error = curl_error($ch);
         curl_close($ch);
         
+        if ($curl_error) {
+            throw new Exception('Erreur cURL: ' . $curl_error);
+        }
+        
         if ($http_code !== 200) {
-            throw new Exception('Impossible d\'obtenir l\'URL du gateway: ' . $response);
+            throw new Exception('Impossible d\'obtenir l\'URL du gateway (HTTP ' . $http_code . '): ' . $response);
         }
         
         $data = json_decode($response, true);
@@ -94,6 +102,12 @@ class YellowjackDiscordDaemon {
      * Se connecter au WebSocket Discord
      */
     private function connectWebSocket() {
+        // Parser l'URL WebSocket
+        $parsed_url = parse_url($this->gateway_url);
+        $host = $parsed_url['host'];
+        $port = isset($parsed_url['port']) ? $parsed_url['port'] : 443;
+        $path = $parsed_url['path'] . '?' . $parsed_url['query'];
+        
         $context = stream_context_create([
             'ssl' => [
                 'verify_peer' => false,
@@ -102,7 +116,7 @@ class YellowjackDiscordDaemon {
         ]);
         
         $this->websocket = stream_socket_client(
-            str_replace(['wss://', 'ws://'], ['ssl://', 'tcp://'], $this->gateway_url),
+            "ssl://{$host}:{$port}",
             $errno, $errstr, 30, STREAM_CLIENT_CONNECT, $context
         );
         
@@ -113,8 +127,8 @@ class YellowjackDiscordDaemon {
         // Envoyer l'en-tête WebSocket
         $key = base64_encode(random_bytes(16));
         $headers = [
-            "GET {$this->gateway_url} HTTP/1.1",
-            "Host: gateway.discord.gg",
+            "GET {$path} HTTP/1.1",
+            "Host: {$host}",
             "Upgrade: websocket",
             "Connection: Upgrade",
             "Sec-WebSocket-Key: $key",
@@ -178,7 +192,7 @@ class YellowjackDiscordDaemon {
         }
         
         $maskingKey = $masked ? fread($this->websocket, 4) : '';
-        $payload = fread($this->websocket, $payloadLength);
+        $payload = $payloadLength > 0 ? fread($this->websocket, $payloadLength) : '';
         
         if ($masked) {
             for ($i = 0; $i < $payloadLength; $i++) {
@@ -367,15 +381,7 @@ if (php_sapi_name() === 'cli') {
     // Mode CLI - démarrer le daemon
     $daemon = new YellowjackDiscordDaemon();
     
-    // Gérer l'arrêt propre
-    pcntl_signal(SIGTERM, function() use ($daemon) {
-        $daemon->stop();
-    });
-    
-    pcntl_signal(SIGINT, function() use ($daemon) {
-        $daemon->stop();
-    });
-    
+    // Démarrer le daemon (la gestion des signaux est intégrée dans la classe)
     $daemon->start();
 } else {
     echo "Ce script doit être exécuté en ligne de commande\n";
