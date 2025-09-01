@@ -199,15 +199,13 @@ function finalizeWeekAndCreateNewWithTax($userId) {
             // Calculer les statistiques de la semaine finalisée
             $stats = calculateWeekStats($activeWeek['id']);
             
-            $webhook = getDiscordWebhook();
-            if ($webhook) {
-                $webhook->notifyWeeklySummary(
-                    $activeWeek['week_number'],
-                    $activeWeek['week_start'],
-                    $activeWeek['week_end'],
-                    $stats
-                );
-            }
+            // Envoyer le résumé hebdomadaire avec le webhook spécifique
+            notifyDiscordWeeklySummary(
+                $activeWeek['week_number'],
+                $activeWeek['week_start'],
+                $activeWeek['week_end'],
+                $stats
+            );
         } catch (Exception $e) {
             error_log("Erreur envoi webhook résumé hebdomadaire: " . $e->getMessage());
         }

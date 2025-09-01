@@ -287,24 +287,23 @@ if ($period === 'active_week' || $period === 'specific_week' || $period === 'wee
     // Vérifier et notifier les objectifs atteints
     try {
         $employee_name = $user['first_name'] . ' ' . $user['last_name'];
-        $webhook = getDiscordWebhook();
         
         // Vérifier chaque objectif
         if ($progress['menages'] >= 100 && $cleaning_stats['total_menages'] >= $objectifs['menages_hebdomadaire']) {
-            $webhook->notifyGoalAchieved($employee_name, 'Ménages hebdomadaires', $cleaning_stats['total_menages']);
+            notifyDiscordGoal($employee_name, 'Ménages hebdomadaires', $cleaning_stats['total_menages']);
         }
         
         if ($progress['salaire'] >= 100 && $cleaning_stats['total_salaire'] >= $objectifs['salaire_hebdomadaire']) {
-            $webhook->notifyGoalAchieved($employee_name, 'Salaire hebdomadaire', $cleaning_stats['total_salaire']);
+            notifyDiscordGoal($employee_name, 'Salaire hebdomadaire', $cleaning_stats['total_salaire']);
         }
         
         if ($auth->canAccessCashRegister()) {
             if ($progress['ventes'] >= 100 && $sales_stats['total_ventes'] >= $objectifs['ventes_hebdomadaires']) {
-                $webhook->notifyGoalAchieved($employee_name, 'Ventes hebdomadaires', $sales_stats['total_ventes']);
+                notifyDiscordGoal($employee_name, 'Ventes hebdomadaires', $sales_stats['total_ventes']);
             }
             
             if ($progress['commissions'] >= 100 && $sales_stats['commissions_total'] >= $objectifs['commissions_hebdomadaires']) {
-                $webhook->notifyGoalAchieved($employee_name, 'Commissions hebdomadaires', $sales_stats['commissions_total']);
+                notifyDiscordGoal($employee_name, 'Commissions hebdomadaires', $sales_stats['commissions_total']);
             }
         }
     } catch (Exception $e) {

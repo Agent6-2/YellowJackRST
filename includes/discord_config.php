@@ -36,12 +36,20 @@ class DiscordConfig {
             }
             
             $this->config = [
+                // Configuration générale
                 'webhook_url' => $settings['discord_webhook_url'] ?? '',
                 'notifications_enabled' => ($settings['discord_notifications_enabled'] ?? '0') === '1',
                 'notify_sales' => ($settings['discord_notify_sales'] ?? '1') === '1',
                 'notify_cleaning' => ($settings['discord_notify_cleaning'] ?? '1') === '1',
                 'notify_goals' => ($settings['discord_notify_goals'] ?? '1') === '1',
-                'notify_weekly_summary' => ($settings['discord_notify_weekly'] ?? '1') === '1'
+                'notify_weekly_summary' => ($settings['discord_notify_weekly'] ?? '1') === '1',
+                
+                // Configuration multi-webhook
+                'multi_webhook_enabled' => ($settings['discord_multi_webhook_enabled'] ?? '0') === '1',
+                'webhook_sales' => $settings['discord_webhook_sales'] ?? '',
+                'webhook_cleaning' => $settings['discord_webhook_cleaning'] ?? '',
+                'webhook_goals' => $settings['discord_webhook_goals'] ?? '',
+                'webhook_weekly' => $settings['discord_webhook_weekly'] ?? ''
             ];
         } catch (Exception $e) {
             error_log("Erreur chargement config Discord: " . $e->getMessage());
@@ -77,7 +85,12 @@ class DiscordConfig {
             'notify_sales' => true,
             'notify_cleaning' => true,
             'notify_goals' => true,
-            'notify_weekly_summary' => true
+            'notify_weekly_summary' => true,
+            'multi_webhook_enabled' => false,
+            'webhook_sales' => '',
+            'webhook_cleaning' => '',
+            'webhook_goals' => '',
+            'webhook_weekly' => ''
         ];
     }
     
@@ -124,6 +137,49 @@ class DiscordConfig {
     }
     
     /**
+     * Vérifier si le mode multi-webhook est activé
+     */
+    public function isMultiWebhookEnabled() {
+        return (bool)($this->config['multi_webhook_enabled'] ?? false);
+    }
+    
+    /**
+     * Obtenir l'URL du webhook pour une catégorie spécifique
+     */
+    public function getWebhookUrlByCategory($category) {
+        if (!$this->isMultiWebhookEnabled()) {
+            // Mode webhook unique
+            return $this->getWebhookUrl();
+        }
+        
+        // Mode multi-webhook
+        switch ($category) {
+            case 'sales':
+                return $this->config['webhook_sales'] ?? '';
+            case 'cleaning':
+                return $this->config['webhook_cleaning'] ?? '';
+            case 'goals':
+                return $this->config['webhook_goals'] ?? '';
+            case 'weekly':
+                return $this->config['webhook_weekly'] ?? '';
+            default:
+                return $this->getWebhookUrl(); // Fallback vers le webhook principal
+        }
+    }
+    
+    /**
+     * Obtenir tous les webhooks par catégorie
+     */
+    public function getAllWebhooks() {
+        return [
+            'sales' => $this->getWebhookUrlByCategory('sales'),
+            'cleaning' => $this->getWebhookUrlByCategory('cleaning'),
+            'goals' => $this->getWebhookUrlByCategory('goals'),
+            'weekly' => $this->getWebhookUrlByCategory('weekly')
+        ];
+    }
+    
+    /**
      * Obtenir toute la configuration
      */
     public function getConfig() {
@@ -141,7 +197,14 @@ class DiscordConfig {
                 'discord_notify_sales' => ($data['notify_sales'] ?? false) ? '1' : '0',
                 'discord_notify_cleaning' => ($data['notify_cleaning'] ?? false) ? '1' : '0',
                 'discord_notify_goals' => ($data['notify_goals'] ?? false) ? '1' : '0',
-                'discord_notify_weekly' => ($data['notify_weekly_summary'] ?? false) ? '1' : '0'
+                'discord_notify_weekly' => ($data['notify_weekly_summary'] ?? false) ? '1' : '0',
+                
+                // Nouveaux paramètres multi-webhook
+                'discord_multi_webhook_enabled' => ($data['multi_webhook_enabled'] ?? false) ? '1' : '0',
+                'discord_webhook_sales' => $data['webhook_sales'] ?? '',
+                'discord_webhook_cleaning' => $data['webhook_cleaning'] ?? '',
+                'discord_webhook_goals' => $data['webhook_goals'] ?? '',
+                'discord_webhook_weekly' => $data['webhook_weekly'] ?? ''
             ];
             
             foreach ($settings as $key => $value) {

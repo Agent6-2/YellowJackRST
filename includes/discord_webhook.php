@@ -7,15 +7,30 @@
  */
 
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/discord_config.php';
 
 /**
  * Classe pour gérer les webhooks Discord
  */
 class DiscordWebhook {
     private $webhook_url;
+    private $category;
+    private $discord_config;
     
-    public function __construct($webhook_url = null) {
-        $this->webhook_url = $webhook_url ?: DISCORD_WEBHOOK_URL;
+    public function __construct($webhook_url = null, $category = null) {
+        $this->discord_config = new DiscordConfig();
+        $this->category = $category;
+        
+        if ($webhook_url) {
+            // URL spécifique fournie
+            $this->webhook_url = $webhook_url;
+        } elseif ($category) {
+            // Utiliser le webhook pour la catégorie spécifique
+            $this->webhook_url = $this->discord_config->getWebhookUrlByCategory($category);
+        } else {
+            // Fallback vers l'ancien système ou webhook principal
+            $this->webhook_url = $this->discord_config->getWebhookUrl() ?: (defined('DISCORD_WEBHOOK_URL') ? DISCORD_WEBHOOK_URL : '');
+        }
     }
     
     /**
@@ -303,6 +318,32 @@ function getDiscordWebhook($webhook_url = null) {
 }
 
 /**
+ * Fonction helper pour obtenir un webhook par catégorie
+ */
+function getDiscordWebhookByCategory($category) {
+    return new DiscordWebhook(null, $category);
+}
+
+/**
+ * Fonctions helper spécifiques par catégorie
+ */
+function getDiscordWebhookSales() {
+    return new DiscordWebhook(null, 'sales');
+}
+
+function getDiscordWebhookCleaning() {
+    return new DiscordWebhook(null, 'cleaning');
+}
+
+function getDiscordWebhookGoals() {
+    return new DiscordWebhook(null, 'goals');
+}
+
+function getDiscordWebhookWeekly() {
+    return new DiscordWebhook(null, 'weekly');
+}
+
+/**
  * Fonction helper pour envoyer rapidement une notification de vente
  */
 function notifyDiscordSale($sale_id) {
@@ -334,13 +375,65 @@ function notifyDiscordSale($sale_id) {
                 'employee_commission' => $sale['employee_commission']
             ];
             
-            $webhook = getDiscordWebhook();
+            $webhook = getDiscordWebhookSales();
             return $webhook->notifySale($sale_data);
         }
         
         return false;
     } catch (Exception $e) {
         error_log("Erreur notification Discord: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Fonction helper pour notifier un service de ménage
+ */
+function notifyDiscordCleaning($employee_name, $cleaning_count, $duration_minutes, $salary) {
+    try {
+        $webhook = getDiscordWebhookCleaning();
+        return $webhook->notifyCleaningServiceCompleted($employee_name, $cleaning_count, $duration_minutes, $salary);
+    } catch (Exception $e) {
+        error_log("Erreur notification Discord ménage: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Fonction helper pour notifier un objectif atteint
+ */
+function notifyDiscordGoal($employee_name, $goal_type, $amount) {
+    try {
+        $webhook = getDiscordWebhookGoals();
+        return $webhook->notifyGoalAchieved($employee_name, $goal_type, $amount);
+    } catch (Exception $e) {
+        error_log("Erreur notification Discord objectif: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Fonction helper pour notifier un résumé hebdomadaire
+ */
+function notifyDiscordWeeklySummary($week_number, $week_start, $week_end, $stats) {
+    try {
+        $webhook = getDiscordWebhookWeekly();
+        return $webhook->notifyWeeklySummary($week_number, $week_start, $week_end, $stats);
+    } catch (Exception $e) {
+        error_log("Erreur notification Discord résumé: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Fonction helper pour notifier une erreur (utilise le webhook principal)
+ */
+function notifyDiscordError($error_message, $context = '') {
+    try {
+        $webhook = getDiscordWebhook(); // Utilise le webhook principal pour les erreurs
+        return $webhook->notifyError($error_message, $context);
+    } catch (Exception $e) {
+        error_log("Erreur notification Discord erreur: " . $e->getMessage());
         return false;
     }
 }

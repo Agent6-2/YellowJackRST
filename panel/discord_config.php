@@ -50,7 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'notify_sales' => isset($_POST['notify_sales']),
             'notify_cleaning' => isset($_POST['notify_cleaning']),
             'notify_goals' => isset($_POST['notify_goals']),
-            'notify_weekly_summary' => isset($_POST['notify_weekly_summary'])
+            'notify_weekly_summary' => isset($_POST['notify_weekly_summary']),
+            'multi_webhook_enabled' => isset($_POST['multi_webhook_enabled']),
+            'webhook_sales' => $_POST['webhook_sales'] ?? '',
+            'webhook_cleaning' => $_POST['webhook_cleaning'] ?? '',
+            'webhook_goals' => $_POST['webhook_goals'] ?? '',
+            'webhook_weekly' => $_POST['webhook_weekly'] ?? ''
         ];
         
         if ($discordConfig->saveConfig($newConfig)) {
@@ -205,10 +210,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div class="card-body">
                             <form method="POST">
-                                <div class="mb-3">
+                                <!-- Option Webhooks Multiples -->
+                                <div class="mb-4">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="multi_webhook_enabled" 
+                                               name="multi_webhook_enabled" 
+                                               <?php echo ($config['multi_webhook_enabled'] ?? false) ? 'checked' : ''; ?>
+                                               onchange="toggleWebhookMode()">
+                                        <label class="form-check-label" for="multi_webhook_enabled">
+                                            <strong>🔀 Utiliser des webhooks séparés par catégorie</strong>
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        Activez cette option pour utiliser un webhook différent pour chaque type de notification.
+                                    </div>
+                                </div>
+
+                                <!-- Webhook Unique (Mode classique) -->
+                                <div id="single_webhook_section" class="mb-3">
                                     <label for="webhook_url" class="form-label">
                                         <i class="fas fa-link me-1"></i>
-                                        URL du Webhook Discord
+                                        URL du Webhook Discord Principal
                                     </label>
                                     <input type="url" 
                                            class="form-control" 
@@ -217,7 +241,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                            value="<?php echo htmlspecialchars($config['webhook_url'] ?? ''); ?>"
                                            placeholder="https://discord.com/api/webhooks/...">
                                     <div class="form-text">
-                                        Pour obtenir cette URL :
+                                        Ce webhook sera utilisé pour toutes les notifications.
+                                    </div>
+                                </div>
+
+                                <!-- Webhooks Multiples -->
+                                <div id="multi_webhook_section" class="mb-3" style="display: none;">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-sitemap me-2"></i>
+                                        Configuration des Webhooks par Catégorie
+                                    </h6>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="webhook_sales" class="form-label">
+                                                💰 Nouvelles Ventes
+                                            </label>
+                                            <input type="url" 
+                                                   class="form-control" 
+                                                   id="webhook_sales" 
+                                                   name="webhook_sales" 
+                                                   value="<?php echo htmlspecialchars($config['webhook_sales'] ?? ''); ?>"
+                                                   placeholder="https://discord.com/api/webhooks/...">
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="webhook_cleaning" class="form-label">
+                                                🧹 Services de Ménage
+                                            </label>
+                                            <input type="url" 
+                                                   class="form-control" 
+                                                   id="webhook_cleaning" 
+                                                   name="webhook_cleaning" 
+                                                   value="<?php echo htmlspecialchars($config['webhook_cleaning'] ?? ''); ?>"
+                                                   placeholder="https://discord.com/api/webhooks/...">
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="webhook_goals" class="form-label">
+                                                🎯 Objectifs Atteints
+                                            </label>
+                                            <input type="url" 
+                                                   class="form-control" 
+                                                   id="webhook_goals" 
+                                                   name="webhook_goals" 
+                                                   value="<?php echo htmlspecialchars($config['webhook_goals'] ?? ''); ?>"
+                                                   placeholder="https://discord.com/api/webhooks/...">
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="webhook_weekly" class="form-label">
+                                                📊 Résumés Hebdomadaires
+                                            </label>
+                                            <input type="url" 
+                                                   class="form-control" 
+                                                   id="webhook_weekly" 
+                                                   name="webhook_weekly" 
+                                                   value="<?php echo htmlspecialchars($config['webhook_weekly'] ?? ''); ?>"
+                                                   placeholder="https://discord.com/api/webhooks/...">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Astuce :</strong> Vous pouvez créer des canaux Discord séparés pour chaque type de notification et configurer un webhook pour chacun.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <div class="form-text">
+                                        <strong>Pour obtenir une URL de webhook :</strong>
                                         <ol class="small mt-2">
                                             <li>Allez dans votre serveur Discord</li>
                                             <li>Paramètres du serveur → Intégrations → Webhooks</li>
@@ -423,5 +516,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/**
+ * Gestion de l'affichage des sections webhook
+ */
+function toggleWebhookMode() {
+    const multiEnabled = document.getElementById('multi_webhook_enabled').checked;
+    const singleSection = document.getElementById('single_webhook_section');
+    const multiSection = document.getElementById('multi_webhook_section');
+    
+    if (multiEnabled) {
+        singleSection.style.display = 'none';
+        multiSection.style.display = 'block';
+    } else {
+        singleSection.style.display = 'block';
+        multiSection.style.display = 'none';
+    }
+}
+
+// Initialiser l'affichage au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    toggleWebhookMode();
+});
+</script>
+
 </body>
 </html>
