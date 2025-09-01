@@ -201,3 +201,62 @@ body .tab-content {
     padding-left: 0 !important;
     padding-right: 0 !important;
 }
+
+/* CORRECTION ULTRA-SPÉCIFIQUE POUR ÉLIMINER TOUT DÉCALAGE */
+.container .nav-tabs,
+.container-fluid .nav-tabs,
+div .nav-tabs {
+    margin: 20px 0 0 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    transform: translateX(0) !important;
+    position: static !important;
+}
+
+.container .tab-content,
+.container-fluid .tab-content,
+div .tab-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    transform: translateX(0) !important;
+    position: static !important;
+}
+
+/* NEUTRALISATION DES STYLES BOOTSTRAP CONFLICTUELS */
+.nav-tabs .nav-item .nav-link {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: -2px !important;
+    border-bottom-color: transparent !important;
+}
+
+.nav-tabs .nav-item:first-child .nav-link {
+    margin-left: 0 !important;
+}
+
+.nav-tabs .nav-item:last-child .nav-link {
+    margin-right: 0 !important;
+}
+
+/* CORRECTION DES OFFSETS ET TRANSFORMS */
+* .nav-tabs {
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    translate: none !important;
+}
+
+* .tab-content {
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    translate: none !important;
+}
