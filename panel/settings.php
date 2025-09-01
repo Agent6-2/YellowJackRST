@@ -424,6 +424,8 @@ $page_title = 'Configuration et Paramètres';
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="../assets/css/panel.css" rel="stylesheet">
+    <!-- Tabs Fix CSS -->
+    <link href="../assets/css/tabs-fix.css" rel="stylesheet">
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
