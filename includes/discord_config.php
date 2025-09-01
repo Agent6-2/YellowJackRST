@@ -25,13 +25,24 @@ class DiscordConfig {
      */
     private function loadConfig() {
         try {
-            $stmt = $this->db->query("SELECT * FROM discord_config ORDER BY id DESC LIMIT 1");
-            $this->config = $stmt->fetch();
+            // Charger depuis system_settings au lieu de discord_config
+            $stmt = $this->db->prepare("SELECT setting_key, setting_value FROM system_settings WHERE setting_key LIKE 'discord_%'");
+            $stmt->execute();
+            $results = $stmt->fetchAll();
             
-            if (!$this->config) {
-                // Créer une configuration par défaut
-                $this->createDefaultConfig();
+            $settings = [];
+            foreach ($results as $row) {
+                $settings[$row['setting_key']] = $row['setting_value'];
             }
+            
+            $this->config = [
+                'webhook_url' => $settings['discord_webhook_url'] ?? '',
+                'notifications_enabled' => ($settings['discord_notifications_enabled'] ?? '0') === '1',
+                'notify_sales' => ($settings['discord_notify_sales'] ?? '1') === '1',
+                'notify_cleaning' => ($settings['discord_notify_cleaning'] ?? '1') === '1',
+                'notify_goals' => ($settings['discord_notify_goals'] ?? '1') === '1',
+                'notify_weekly_summary' => ($settings['discord_notify_weekly'] ?? '1') === '1'
+            ];
         } catch (Exception $e) {
             error_log("Erreur chargement config Discord: " . $e->getMessage());
             $this->config = $this->getDefaultConfig();
@@ -62,10 +73,10 @@ class DiscordConfig {
     private function getDefaultConfig() {
         return [
             'webhook_url' => '',
-            'notifications_enabled' => true,
+            'notifications_enabled' => false,
             'notify_sales' => true,
+            'notify_cleaning' => true,
             'notify_goals' => true,
-            'notify_errors' => true,
             'notify_weekly_summary' => true
         ];
     }
@@ -99,10 +110,10 @@ class DiscordConfig {
     }
     
     /**
-     * Vérifier si les notifications d'erreurs sont activées
+     * Vérifier si les notifications de nettoyage sont activées
      */
-    public function isNotifyErrorsEnabled() {
-        return (bool)($this->config['notify_errors'] ?? false);
+    public function isNotifyCleaningEnabled() {
+        return (bool)($this->config['notify_cleaning'] ?? false);
     }
     
     /**
@@ -124,34 +135,28 @@ class DiscordConfig {
      */
     public function saveConfig($data) {
         try {
-            $stmt = $this->db->prepare("
-                UPDATE discord_config SET 
-                webhook_url = ?,
-                notifications_enabled = ?,
-                notify_sales = ?,
-                notify_goals = ?,
-                notify_errors = ?,
-                notify_weekly_summary = ?,
-                updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            ");
+            $settings = [
+                'discord_webhook_url' => $data['webhook_url'] ?? '',
+                'discord_notifications_enabled' => ($data['notifications_enabled'] ?? false) ? '1' : '0',
+                'discord_notify_sales' => ($data['notify_sales'] ?? false) ? '1' : '0',
+                'discord_notify_cleaning' => ($data['notify_cleaning'] ?? false) ? '1' : '0',
+                'discord_notify_goals' => ($data['notify_goals'] ?? false) ? '1' : '0',
+                'discord_notify_weekly' => ($data['notify_weekly_summary'] ?? false) ? '1' : '0'
+            ];
             
-            $result = $stmt->execute([
-                $data['webhook_url'] ?? '',
-                (bool)($data['notifications_enabled'] ?? false),
-                (bool)($data['notify_sales'] ?? false),
-                (bool)($data['notify_goals'] ?? false),
-                (bool)($data['notify_errors'] ?? false),
-                (bool)($data['notify_weekly_summary'] ?? false),
-                $this->config['id']
-            ]);
-            
-            if ($result) {
-                $this->loadConfig(); // Recharger la configuration
-                return true;
+            foreach ($settings as $key => $value) {
+                $stmt = $this->db->prepare("
+                    INSERT INTO system_settings (setting_key, setting_value, updated_at) 
+                    VALUES (?, ?, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE 
+                    setting_value = VALUES(setting_value),
+                    updated_at = CURRENT_TIMESTAMP
+                ");
+                $stmt->execute([$key, $value]);
             }
             
-            return false;
+            $this->loadConfig(); // Recharger la configuration
+            return true;
         } catch (Exception $e) {
             error_log("Erreur sauvegarde config Discord: " . $e->getMessage());
             return false;
@@ -203,11 +208,7 @@ class DiscordConfig {
  * Fonction helper pour obtenir la configuration Discord
  */
 function getDiscordConfig() {
-    static $instance = null;
-    if ($instance === null) {
-        $instance = new DiscordConfig();
-    }
-    return $instance;
+    return new DiscordConfig();
 }
 
 /**

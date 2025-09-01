@@ -66,16 +66,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             case 'update_discord':
                 $discord_webhook = trim($_POST['discord_webhook'] ?? '');
+                $notify_sales = isset($_POST['notify_sales']) ? '1' : '0';
+                $notify_cleaning = isset($_POST['notify_cleaning']) ? '1' : '0';
+                $notify_goals = isset($_POST['notify_goals']) ? '1' : '0';
+                $notify_weekly = isset($_POST['notify_weekly']) ? '1' : '0';
+                $notifications_enabled = isset($_POST['notifications_enabled']) ? '1' : '0';
                 
                 if (!empty($discord_webhook) && !filter_var($discord_webhook, FILTER_VALIDATE_URL)) {
                     $error = 'L\'URL du webhook Discord n\'est pas valide.';
                 } else {
                     try {
-                        $stmt = $db->prepare("UPDATE system_settings SET setting_value = ? WHERE setting_key = 'discord_webhook_url'");
-                        $stmt->execute([$discord_webhook]);
+                        $db->beginTransaction();
+                        
+                        // Configuration Discord complète
+                        $discord_settings = [
+                            'discord_webhook_url' => $discord_webhook,
+                            'discord_notifications_enabled' => $notifications_enabled,
+                            'discord_notify_sales' => $notify_sales,
+                            'discord_notify_cleaning' => $notify_cleaning,
+                            'discord_notify_goals' => $notify_goals,
+                            'discord_notify_weekly' => $notify_weekly
+                        ];
+                        
+                        $stmt = $db->prepare("
+                            INSERT INTO system_settings (setting_key, setting_value) 
+                            VALUES (?, ?) 
+                            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+                        ");
+                        
+                        foreach ($discord_settings as $key => $value) {
+                            $stmt->execute([$key, $value]);
+                        }
+                        
+                        $db->commit();
                         $message = 'Configuration Discord mise à jour avec succès !';
                     } catch (Exception $e) {
-                        $error = 'Erreur lors de la mise à jour de la configuration Discord.';
+                        $db->rollBack();
+                        $error = 'Erreur lors de la mise à jour de la configuration Discord : ' . $e->getMessage();
                     }
                 }
                 break;
@@ -620,7 +647,7 @@ $page_title = 'Configuration et Paramètres';
                             <div class="card-body">
                                 <div class="alert alert-info">
                                     <i class="fas fa-info-circle me-2"></i>
-                                    <strong>Information :</strong> Le webhook Discord permet d'envoyer automatiquement les tickets de caisse sur votre serveur Discord.
+                                    <strong>Information :</strong> Les webhooks Discord permettent d'envoyer automatiquement des notifications sur votre serveur Discord pour différents événements.
                                 </div>
                                 
                                 <form method="POST">
@@ -630,7 +657,7 @@ $page_title = 'Configuration et Paramètres';
                                     <div class="mb-3">
                                         <label for="discord_webhook" class="form-label">URL du Webhook Discord</label>
                                         <input type="url" class="form-control" id="discord_webhook" name="discord_webhook" 
-                                               value="<?php echo htmlspecialchars($settings['discord_webhook'] ?? ''); ?>" 
+                                               value="<?php echo htmlspecialchars($settings['discord_webhook_url'] ?? ''); ?>" 
                                                placeholder="https://discord.com/api/webhooks/...">
                                         <div class="form-text">
                                             Pour obtenir l'URL du webhook :
@@ -640,6 +667,61 @@ $page_title = 'Configuration et Paramètres';
                                                 <li>Créez un nouveau webhook ou utilisez un existant</li>
                                                 <li>Copiez l'URL du webhook</li>
                                             </ol>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="notifications_enabled" name="notifications_enabled" 
+                                                   <?php echo ($settings['discord_notifications_enabled'] ?? '0') === '1' ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="notifications_enabled">
+                                                <strong>Activer les notifications Discord</strong>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="fas fa-bell me-1"></i>
+                                            Types de notifications
+                                        </label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="notify_sales" name="notify_sales" 
+                                                           <?php echo ($settings['discord_notify_sales'] ?? '0') === '1' ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="notify_sales">
+                                                        <i class="fas fa-cash-register me-1 text-success"></i>
+                                                        Nouvelles ventes
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="notify_cleaning" name="notify_cleaning" 
+                                                           <?php echo ($settings['discord_notify_cleaning'] ?? '0') === '1' ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="notify_cleaning">
+                                                        <i class="fas fa-broom me-1 text-primary"></i>
+                                                        Services de ménage
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="notify_goals" name="notify_goals" 
+                                                           <?php echo ($settings['discord_notify_goals'] ?? '0') === '1' ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="notify_goals">
+                                                        <i class="fas fa-trophy me-1 text-warning"></i>
+                                                        Objectifs atteints
+                                                    </label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="notify_weekly" name="notify_weekly" 
+                                                           <?php echo ($settings['discord_notify_weekly'] ?? '0') === '1' ? 'checked' : ''; ?>>
+                                                    <label class="form-check-label" for="notify_weekly">
+                                                        <i class="fas fa-calendar-week me-1 text-info"></i>
+                                                        Résumés hebdomadaires
+                                                    </label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     
