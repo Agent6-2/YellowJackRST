@@ -106,8 +106,8 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 .nav-tabs {
     margin-left: 0 !important;
     padding-left: 0 !important;
-    width: 95% !important;
-    max-width: calc(95vw - var(--sidebar-width) - 80px) !important;
+    width: 85% !important;
+    max-width: calc(85vw - var(--sidebar-width) - 100px) !important;
     overflow-x: auto;
     flex-wrap: nowrap;
     position: relative;
@@ -132,8 +132,8 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 
 /* Tab content adjustments */
 .tab-content {
-    width: 95% !important;
-    max-width: calc(95vw - var(--sidebar-width) - 80px) !important;
+    width: 85% !important;
+    max-width: calc(85vw - var(--sidebar-width) - 100px) !important;
     position: relative;
     z-index: 10;
     margin-left: 0 !important;
@@ -142,15 +142,15 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 
 /* Ensure tabs container doesn't overflow */
 #settingsTabs {
-    max-width: calc(95vw - var(--sidebar-width) - 80px) !important;
-    width: 95% !important;
+    max-width: calc(85vw - var(--sidebar-width) - 100px) !important;
+    width: 85% !important;
     overflow-x: auto;
     margin-left: 0 !important;
 }
 
 #settingsTabsContent {
-    max-width: calc(95vw - var(--sidebar-width) - 80px) !important;
-    width: 95% !important;
+    max-width: calc(85vw - var(--sidebar-width) - 100px) !important;
+    width: 85% !important;
     margin-left: 0 !important;
 }
 

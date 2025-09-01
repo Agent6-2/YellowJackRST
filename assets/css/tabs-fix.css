@@ -16,8 +16,8 @@
     margin-left: 0 !important;
     margin-bottom: 0;
     list-style: none;
-    width: 95% !important;
-    max-width: calc(95vw - var(--sidebar-width, 200px) - 80px) !important;
+    width: 85% !important;
+    max-width: calc(85vw - var(--sidebar-width, 200px) - 100px) !important;
     overflow-x: auto;
 }
 
@@ -63,8 +63,8 @@
     background-color: #fff;
     border-bottom-left-radius: 0.375rem;
     border-bottom-right-radius: 0.375rem;
-    width: 95% !important;
-    max-width: calc(95vw - var(--sidebar-width, 200px) - 80px) !important;
+    width: 85% !important;
+    max-width: calc(85vw - var(--sidebar-width, 200px) - 100px) !important;
     margin-left: 0 !important;
     padding-left: 0 !important;
 }
@@ -129,8 +129,8 @@
 @media (max-width: 768px) {
     .nav-tabs {
         flex-wrap: nowrap;
-        max-width: calc(100vw - 40px) !important;
-        width: 95% !important;
+        max-width: calc(100vw - 60px) !important;
+        width: 85% !important;
         margin: 0 10px;
     }
     
@@ -141,8 +141,8 @@
     
     .tab-content {
         margin-top: 0.5rem !important;
-        max-width: calc(100vw - 40px) !important;
-        width: 95% !important;
+        max-width: calc(100vw - 60px) !important;
+        width: 85% !important;
         margin-left: 10px !important;
     }
 }
