@@ -1,46 +1,54 @@
 /**
- * CORRECTION ALIGNEMENT ONGLETS - UTILISATION DES DÉCALAGES NATURELS
- * Correction ciblée utilisant l'alignement Bootstrap par défaut
+ * CORRECTION ALIGNEMENT ONGLETS - FORCE ALIGNEMENT UNIFORME
+ * Correction spécifique pour éliminer tout décalage
  */
 
 /* CACHE BUSTER - Forcer le rechargement */
-/* Version: 4.0 - Alignement naturel */
+/* Version: 5.0 - Alignement forcé uniforme */
 
-/* Styles de base pour les onglets - utilise l'alignement Bootstrap naturel */
+/* Styles de base pour les onglets - force l'alignement uniforme */
 .nav-tabs {
-    margin-top: 20px;
-    border-bottom: 1px solid #dee2e6;
+    margin-top: 20px !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    padding-left: 0 !important;
+    margin-bottom: 0 !important;
+    list-style: none !important;
 }
 
 .nav-tabs .nav-item {
-    margin-bottom: -1px;
+    margin-bottom: -1px !important;
+    display: block !important;
+    position: relative !important;
 }
 
 .nav-tabs .nav-link {
-    border: 1px solid transparent;
-    border-top-left-radius: 0.375rem;
-    border-top-right-radius: 0.375rem;
-    padding: 0.5rem 1rem;
-    color: #495057;
-    background-color: transparent;
-    transition: all 0.15s ease-in-out;
-    text-decoration: none;
+    border: 1px solid transparent !important;
+    border-top-left-radius: 0.375rem !important;
+    border-top-right-radius: 0.375rem !important;
+    padding: 0.5rem 1rem !important;
+    color: #495057 !important;
+    background-color: transparent !important;
+    transition: all 0.15s ease-in-out !important;
+    text-decoration: none !important;
+    display: block !important;
+    position: relative !important;
+    margin: 0 !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
-/* Forcer l'alignement identique pour tous les onglets */
-#general-tab,
-#discord-tab,
-#system-tab,
-#commissions-tab,
-#vitrine-tab,
-#about-tab {
-    /* Utiliser exactement le même positionnement que Général et Discord */
-    position: relative;
-    display: inline-block;
-    margin: 0;
-    padding: 0.5rem 1rem;
-    border: 1px solid transparent;
-    vertical-align: top;
+/* Force l'alignement identique pour tous les onglets spécifiques */
+#general-tab, #discord-tab, #system-tab, #commissions-tab, #vitrine-tab, #about-tab {
+    position: relative !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0.5rem 1rem !important;
+    border: 1px solid transparent !important;
+    transform: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
 }
 
 .nav-tabs .nav-link:hover {
