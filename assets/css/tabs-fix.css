@@ -27,6 +27,22 @@
     text-decoration: none;
 }
 
+/* Forcer l'alignement identique pour tous les onglets */
+#general-tab,
+#discord-tab,
+#system-tab,
+#commissions-tab,
+#vitrine-tab,
+#about-tab {
+    /* Utiliser exactement le même positionnement que Général et Discord */
+    position: relative;
+    display: inline-block;
+    margin: 0;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    vertical-align: top;
+}
+
 .nav-tabs .nav-link:hover {
     border-color: #e9ecef #e9ecef #dee2e6;
     isolation: isolate;
