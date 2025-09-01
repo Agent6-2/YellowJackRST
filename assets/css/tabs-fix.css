@@ -3,24 +3,36 @@
  * Styles spécifiques pour les onglets Bootstrap
  */
 
-/* Correction des onglets Bootstrap */
+/* CORRECTION FORCÉE DU DÉCALAGE */
 .nav-tabs {
-    border-bottom: 2px solid #dee2e6;
-    margin-bottom: 0;
+    border-bottom: 2px solid #dee2e6 !important;
+    margin-bottom: 0 !important;
+    margin-top: 20px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    padding-left: 0 !important;
+    list-style: none !important;
+    border-collapse: separate !important;
 }
 
 .nav-tabs .nav-item {
-    margin-bottom: -2px;
+    margin-bottom: -2px !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+    display: block !important;
 }
 
 .nav-tabs .nav-link {
-    border: 1px solid transparent;
-    border-top-left-radius: 0.375rem;
-    border-top-right-radius: 0.375rem;
-    padding: 0.75rem 1rem;
-    color: #495057;
-    background-color: transparent;
-    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent !important;
+    border-top-left-radius: 0.375rem !important;
+    border-top-right-radius: 0.375rem !important;
+    padding: 0.75rem 1rem !important;
+    color: #495057 !important;
+    background-color: transparent !important;
+    transition: all 0.15s ease-in-out !important;
+    display: block !important;
+    text-decoration: none !important;
+    position: relative !important;
 }
 
 .nav-tabs .nav-link:hover {
@@ -37,33 +49,45 @@
     font-weight: 600;
 }
 
-/* Correction du contenu des onglets */
+/* CORRECTION FORCÉE DU CONTENU DES ONGLETS */
 .tab-content {
-    border: 1px solid #dee2e6;
-    border-top: none;
-    background-color: #fff;
-    border-bottom-left-radius: 0.375rem;
-    border-bottom-right-radius: 0.375rem;
+    border: 1px solid #dee2e6 !important;
+    border-top: none !important;
+    background-color: #fff !important;
+    border-bottom-left-radius: 0.375rem !important;
+    border-bottom-right-radius: 0.375rem !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    position: relative !important;
+    clear: both !important;
 }
 
 .tab-pane {
-    padding: 0;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: none !important;
+}
+
+.tab-pane.active {
+    display: block !important;
 }
 
 .tab-pane .card {
-    border: none;
-    border-radius: 0;
-    margin-top: 0;
+    border: none !important;
+    border-radius: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    box-shadow: none !important;
 }
 
 .tab-pane .card:first-child {
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
 }
 
 .tab-pane .card:last-child {
-    border-bottom-left-radius: 0.375rem;
-    border-bottom-right-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem !important;
+    border-bottom-right-radius: 0.375rem !important;
 }
 
 /* Correction spécifique pour les onglets problématiques */
@@ -112,16 +136,68 @@
     opacity: 1;
 }
 
-/* Correction du z-index pour éviter les chevauchements */
+/* CORRECTION COMPLÈTE DU Z-INDEX ET ALIGNEMENT */
 .nav-tabs .nav-item {
-    z-index: 1;
+    z-index: 1 !important;
+    float: none !important;
+    position: relative !important;
 }
 
 .nav-tabs .nav-item.show .nav-link,
 .nav-tabs .nav-link.active {
-    z-index: 3;
+    z-index: 3 !important;
 }
 
 .nav-tabs .nav-link:hover {
-    z-index: 2;
+    z-index: 2 !important;
+}
+
+/* ÉLIMINATION COMPLÈTE DU DÉCALAGE */
+#settingsTabs {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+}
+
+#settingsTabsContent {
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+}
+
+/* RESET COMPLET POUR ÉVITER LES CONFLITS */
+.nav-tabs, .nav-tabs * {
+    box-sizing: border-box !important;
+}
+
+.tab-content, .tab-content * {
+    box-sizing: border-box !important;
+}
+
+/* CORRECTION DES MARGES ET PADDINGS PARASITES */
+body .nav-tabs {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+body .tab-content {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
