@@ -425,7 +425,7 @@ $page_title = 'Configuration et Paramètres';
     <!-- Custom CSS -->
     <link href="../assets/css/panel.css" rel="stylesheet">
     <!-- Tabs Fix CSS -->
-    <link href="../assets/css/tabs-fix.css" rel="stylesheet">
+    <link href="../assets/css/tabs-fix.css?v=<?php echo time(); ?>" rel="stylesheet">
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
