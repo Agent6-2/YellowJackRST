@@ -171,6 +171,96 @@ class DiscordWebhook {
     }
     
     /**
+     * Notifier la fin d'un service de ménage
+     */
+    public function notifyCleaningServiceCompleted($employee_name, $cleaning_count, $duration_minutes, $salary) {
+        $hours = floor($duration_minutes / 60);
+        $minutes = $duration_minutes % 60;
+        $duration_text = $hours > 0 ? "{$hours}h {$minutes}m" : "{$minutes}m";
+        
+        $title = "🧹 Service de Ménage Terminé";
+        $description = "Un service de ménage vient d'être complété";
+        
+        $fields = [
+            [
+                'name' => '👤 Employé',
+                'value' => $employee_name,
+                'inline' => true
+            ],
+            [
+                'name' => '🏠 Ménages effectués',
+                'value' => $cleaning_count,
+                'inline' => true
+            ],
+            [
+                'name' => '⏱️ Durée',
+                'value' => $duration_text,
+                'inline' => true
+            ],
+            [
+                'name' => '💰 Salaire gagné',
+                'value' => number_format($salary, 2) . '$',
+                'inline' => true
+            ],
+            [
+                'name' => '📅 Date',
+                'value' => date('d/m/Y H:i'),
+                'inline' => true
+            ]
+        ];
+        
+        return $this->sendEmbed($title, $description, 0x28A745, $fields);
+    }
+    
+    /**
+     * Notifier un résumé hebdomadaire
+     */
+    public function notifyWeeklySummary($week_number, $week_start, $week_end, $stats) {
+        $title = "📊 Résumé Hebdomadaire - Semaine " . $week_number;
+        $description = "Récapitulatif des performances de la semaine finalisée";
+        
+        $fields = [
+            [
+                'name' => '📅 Période',
+                'value' => date('d/m/Y', strtotime($week_start)) . ' - ' . date('d/m/Y', strtotime($week_end)),
+                'inline' => false
+            ],
+            [
+                'name' => '💰 Chiffre d\'affaires total',
+                'value' => number_format($stats['total_revenue'], 2) . '$',
+                'inline' => true
+            ],
+            [
+                'name' => '🛒 Nombre de ventes',
+                'value' => $stats['total_sales_count'],
+                'inline' => true
+            ],
+            [
+                'name' => '🧹 Services de ménage',
+                'value' => $stats['total_cleaning_count'],
+                'inline' => true
+            ],
+            [
+                'name' => '💵 Revenus ménage',
+                'value' => number_format($stats['total_cleaning_revenue'], 2) . '$',
+                'inline' => true
+            ],
+            [
+                'name' => '📈 Revenus ventes',
+                'value' => number_format($stats['total_sales_revenue'], 2) . '$',
+                'inline' => true
+            ],
+            [
+                'name' => '🏆 Statut',
+                'value' => 'Semaine finalisée',
+                'inline' => true
+            ]
+        ];
+        
+        return $this->sendEmbed($title, $description, 0x007BFF, $fields);
+    }
+    
+    /**
      * Envoyer le webhook
      */
     private function sendWebhook($data) {

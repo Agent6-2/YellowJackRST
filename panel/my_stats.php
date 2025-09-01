@@ -9,6 +9,7 @@
 require_once '../config/database.php';
 require_once '../includes/auth.php';
 require_once '../includes/week_functions.php';
+require_once '../includes/discord_webhook.php';
 requireLogin();
 
 $auth = getAuth();
@@ -281,6 +282,34 @@ if ($period === 'active_week' || $period === 'specific_week' || $period === 'wee
     if ($auth->canAccessCashRegister()) {
         $progress['ventes'] = $sales_stats['total_ventes'] > 0 ? min(100, ($sales_stats['total_ventes'] / $objectifs['ventes_hebdomadaires']) * 100) : 0;
         $progress['commissions'] = $sales_stats['commissions_total'] > 0 ? min(100, ($sales_stats['commissions_total'] / $objectifs['commissions_hebdomadaires']) * 100) : 0;
+    }
+    
+    // Vérifier et notifier les objectifs atteints
+    try {
+        $employee_name = $user['first_name'] . ' ' . $user['last_name'];
+        $webhook = getDiscordWebhook();
+        
+        // Vérifier chaque objectif
+        if ($progress['menages'] >= 100 && $cleaning_stats['total_menages'] >= $objectifs['menages_hebdomadaire']) {
+            $webhook->notifyGoalAchieved($employee_name, 'Ménages hebdomadaires', $cleaning_stats['total_menages']);
+        }
+        
+        if ($progress['salaire'] >= 100 && $cleaning_stats['total_salaire'] >= $objectifs['salaire_hebdomadaire']) {
+            $webhook->notifyGoalAchieved($employee_name, 'Salaire hebdomadaire', $cleaning_stats['total_salaire']);
+        }
+        
+        if ($auth->canAccessCashRegister()) {
+            if ($progress['ventes'] >= 100 && $sales_stats['total_ventes'] >= $objectifs['ventes_hebdomadaires']) {
+                $webhook->notifyGoalAchieved($employee_name, 'Ventes hebdomadaires', $sales_stats['total_ventes']);
+            }
+            
+            if ($progress['commissions'] >= 100 && $sales_stats['commissions_total'] >= $objectifs['commissions_hebdomadaires']) {
+                $webhook->notifyGoalAchieved($employee_name, 'Commissions hebdomadaires', $sales_stats['commissions_total']);
+            }
+        }
+    } catch (Exception $e) {
+        // Log l'erreur mais ne pas interrompre l'affichage
+        error_log('Erreur webhook Discord (objectifs): ' . $e->getMessage());
     }
 }
 

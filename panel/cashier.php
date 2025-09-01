@@ -15,6 +15,7 @@ require_once '../includes/auth.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 require_once '../includes/week_functions.php';
+require_once '../includes/discord_webhook.php';
 
 // Vérifier l'authentification et les permissions
 requireLogin();
@@ -207,8 +208,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $db->commit();
                     
-                    // Envoyer le ticket Discord (si webhook configuré)
-                    sendDiscordTicket($sale_id, $sale_items, $customer, $total_amount, $loyalty_discount, $business_discount, $final_amount, $commission, $user);
+                    // Envoyer le webhook Discord pour la nouvelle vente
+                    try {
+                        notifyDiscordSale($sale_id);
+                    } catch (Exception $e) {
+                        // Log l'erreur mais ne pas interrompre le processus de vente
+                        error_log('Erreur webhook Discord: ' . $e->getMessage());
+                    }
                     
                     $message = "Vente enregistrée avec succès ! Ticket #$sale_id - Total: {$final_amount}$ - Commission: {$commission}$";
                     
@@ -262,50 +268,7 @@ $stmt = $db->prepare("
 $stmt->execute();
 $customers = $stmt->fetchAll();
 
-// Fonction pour envoyer le ticket Discord
-function sendDiscordTicket($sale_id, $items, $customer, $total, $loyalty_discount, $business_discount, $final, $commission, $user) {
-    if (!DISCORD_WEBHOOK_URL) return;
-    
-    $customer_name = $customer ? $customer['name'] : 'Client anonyme';
-    $discount_text = '';
-    if ($loyalty_discount > 0) {
-        $discount_text .= "\nRéduction fidélité: -{$loyalty_discount}$";
-    }
-    if ($business_discount > 0) {
-        $discount_text .= "\nRéduction entreprise: -{$business_discount}$";
-    }
-    
-    $items_text = "";
-    foreach ($items as $item) {
-        $items_text .= "• {$item['product']['name']} x{$item['quantity']} = {$item['total_price']}$\n";
-    }
-    
-    $embed = [
-        'title' => "🧾 Ticket de Caisse #$sale_id",
-        'description' => "Nouvelle vente au Yellowjack",
-        'color' => 0xD4AF37,
-        'fields' => [
-            ['name' => '👤 Client', 'value' => $customer_name, 'inline' => true],
-            ['name' => '🧑‍💼 Vendeur', 'value' => $user['first_name'] . ' ' . $user['last_name'], 'inline' => true],
-            ['name' => '📅 Date', 'value' => formatDateTime(getCurrentDateTime()), 'inline' => true],
-            ['name' => '🛒 Produits', 'value' => $items_text, 'inline' => false],
-            ['name' => '💰 Montant', 'value' => "Sous-total: {$total}${discount_text}\n**Total: {$final}$**", 'inline' => true],
-            ['name' => '💵 Commission', 'value' => "{$commission}$", 'inline' => true]
-        ],
-        'footer' => ['text' => 'Le Yellowjack - Système de caisse'],
-        'timestamp' => date('c')
-    ];
-    
-    $payload = ['embeds' => [$embed]];
-    
-    $ch = curl_init(DISCORD_WEBHOOK_URL);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_exec($ch);
-    curl_close($ch);
-}
+// Ancienne fonction sendDiscordTicket() supprimée - remplacée par la classe DiscordWebhook
 
 $page_title = 'Caisse Enregistreuse';
 ?>

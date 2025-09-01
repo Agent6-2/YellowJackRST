@@ -10,6 +10,7 @@ require_once '../includes/auth.php';
 require_once '../config/database.php';
 require_once '../includes/functions.php';
 require_once '../includes/week_functions.php';
+require_once '../includes/discord_webhook.php';
 
 // Vérifier l'authentification
 requireLogin();
@@ -159,6 +160,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $salary,
                                 $current_session['id']
                             ]);
+                            
+                            // Envoyer le webhook Discord pour la fin du service de ménage
+                            try {
+                                $webhook = getDiscordWebhook();
+                                if ($webhook) {
+                                    $employee_name = $user['first_name'] . ' ' . $user['last_name'];
+                                    $webhook->notifyCleaningServiceCompleted($employee_name, $cleaning_count, $duration, $salary);
+                                }
+                            } catch (Exception $e) {
+                                // Log l'erreur mais ne pas interrompre le processus
+                                error_log('Erreur webhook Discord (ménage): ' . $e->getMessage());
+                            }
                             
                             $message = "Service terminé ! Durée: {$duration} minutes, Ménages: {$cleaning_count}, Salaire: {$salary}$";
                             $current_session = null;

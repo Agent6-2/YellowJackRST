@@ -1,13 +1,14 @@
 <?php
 /**
- * Fonctions d'impôts intégrées au système de gestion des semaines
+ * Fonctions pour la gestion des impôts intégrées au système de semaines
  * 
  * @author Développeur Web Professionnel
  * @version 1.0
  */
 
 require_once __DIR__ . '/../config/database.php';
-require_once 'week_functions.php';
+require_once __DIR__ . '/week_functions.php';
+require_once __DIR__ . '/discord_webhook.php';
 
 /**
  * Calcule les impôts selon le système de tranches
@@ -192,6 +193,24 @@ function finalizeWeekAndCreateNewWithTax($userId) {
         $stmt->execute([$newWeekNumber, $newWeekStart, $newWeekEnd, $userId]);
         
         $db->commit();
+        
+        // Envoyer le webhook de résumé hebdomadaire
+        try {
+            // Calculer les statistiques de la semaine finalisée
+            $stats = calculateWeekStats($activeWeek['id']);
+            
+            $webhook = getDiscordWebhook();
+            if ($webhook) {
+                $webhook->notifyWeeklySummary(
+                    $activeWeek['week_number'],
+                    $activeWeek['week_start'],
+                    $activeWeek['week_end'],
+                    $stats
+                );
+            }
+        } catch (Exception $e) {
+            error_log("Erreur envoi webhook résumé hebdomadaire: " . $e->getMessage());
+        }
         
         return [
             'success' => true,

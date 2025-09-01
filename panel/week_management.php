@@ -11,6 +11,7 @@ require_once '../includes/auth.php';
 require_once '../includes/week_functions.php';
 require_once '../includes/tax_functions_integrated.php';
 require_once '../config/database.php';
+require_once '../includes/discord_webhook.php';
 
 $db = getDB();
 $auth = new Auth($db);
