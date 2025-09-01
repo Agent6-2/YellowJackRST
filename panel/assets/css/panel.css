@@ -104,12 +104,14 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 
 /* Tabs adjustments to avoid sidebar collision */
 .nav-tabs {
-    margin-left: 0;
-    padding-left: 0;
-    width: 100%;
-    max-width: calc(100vw - var(--sidebar-width) - 40px);
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    max-width: calc(100vw - var(--sidebar-width) - 60px) !important;
     overflow-x: auto;
     flex-wrap: nowrap;
+    position: relative;
+    z-index: 10;
 }
 
 .nav-tabs .nav-item {
@@ -130,8 +132,24 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
 
 /* Tab content adjustments */
 .tab-content {
-    width: 100%;
-    max-width: calc(100vw - var(--sidebar-width) - 40px);
+    width: 100% !important;
+    max-width: calc(100vw - var(--sidebar-width) - 60px) !important;
+    position: relative;
+    z-index: 10;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+/* Ensure tabs container doesn't overflow */
+#settingsTabs {
+    max-width: calc(100vw - var(--sidebar-width) - 60px) !important;
+    overflow-x: auto;
+    margin-left: 0 !important;
+}
+
+#settingsTabsContent {
+    max-width: calc(100vw - var(--sidebar-width) - 60px) !important;
+    margin-left: 0 !important;
 }
 
 /* Responsive adjustments */
@@ -295,8 +313,9 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
         top: 5rem;
     }
     
-    main {
-        margin-left: 0;
+    main.col-md-9.ms-sm-auto.col-lg-10 {
+        margin-left: 0 !important;
+        width: 100% !important;
         padding: 15px;
     }
 }
