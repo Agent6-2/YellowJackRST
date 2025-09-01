@@ -1,9 +1,10 @@
 <?php
 /**
- * Configuration du webhook Discord pour Le Yellowjack
+ * Configuration des webhooks Discord pour Le Yellowjack
+ * Notifications pour ventes et services uniquement
  * 
  * @author Développeur Web Professionnel
- * @version 1.0
+ * @version 2.0
  */
 
 require_once __DIR__ . '/../includes/auth.php';
@@ -47,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'webhook_url' => $_POST['webhook_url'] ?? '',
             'notifications_enabled' => isset($_POST['notifications_enabled']),
             'notify_sales' => isset($_POST['notify_sales']),
+            'notify_cleaning' => isset($_POST['notify_cleaning']),
             'notify_goals' => isset($_POST['notify_goals']),
-            'notify_errors' => isset($_POST['notify_errors']),
             'notify_weekly_summary' => isset($_POST['notify_weekly_summary'])
         ];
         
@@ -76,9 +77,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $webhook->notifySale($test_sale_data);
             
             if ($result) {
-                $message = 'Notification de vente de test envoyée avec succès !';
+                $message = 'Webhook de vente de test envoyé avec succès !';
             } else {
-                $error = 'Échec de l\'envoi de la notification de test.';
+                $error = 'Échec de l\'envoi du webhook de test.';
+            }
+        }
+    } elseif (isset($_POST['send_test_cleaning'])) {
+        // Envoyer une notification de service de ménage de test
+        if (empty($discordConfig->getWebhookUrl())) {
+            $error = 'Webhook Discord non configuré.';
+        } else {
+            $webhook = new DiscordWebhook($discordConfig->getWebhookUrl());
+            
+            // Créer un embed pour le service de ménage
+            $embed = [
+                'title' => '🧹 Nouveau Service de Ménage',
+                'color' => 3447003, // Bleu
+                'fields' => [
+                    [
+                        'name' => 'Employé',
+                        'value' => $user['first_name'] . ' ' . $user['last_name'],
+                        'inline' => true
+                    ],
+                    [
+                        'name' => 'Client',
+                        'value' => 'Client Test Ménage',
+                        'inline' => true
+                    ],
+                    [
+                        'name' => 'Type de service',
+                        'value' => 'Ménage complet',
+                        'inline' => true
+                    ],
+                    [
+                        'name' => 'Montant',
+                        'value' => '85.00 €',
+                        'inline' => true
+                    ]
+                ],
+                'timestamp' => date('c'),
+                'footer' => [
+                    'text' => 'YellowJack - Test Webhook'
+                ]
+            ];
+            
+            $result = $webhook->sendEmbed('🧹 **Service de ménage de test**', $embed);
+            
+            if ($result) {
+                $message = 'Webhook de service de ménage de test envoyé avec succès !';
+            } else {
+                $error = 'Échec de l\'envoi du webhook de test.';
             }
         }
     }
@@ -90,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuration Discord - Le Yellowjack</title>
+    <title>Webhooks Discord - Le Yellowjack</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -123,9 +171,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <h1 class="h2">
-                    <i class="fab fa-discord me-2 text-primary"></i>
-                    Configuration Discord
+                    <i class="fas fa-webhook me-2 text-primary"></i>
+                    Webhooks Discord
                 </h1>
+                <small class="text-muted">Notifications pour ventes et services</small>
             </div>
             
             <?php if ($message): ?>
@@ -150,8 +199,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="card">
                         <div class="card-header">
                             <h5 class="mb-0">
-                                <i class="fas fa-cog me-2"></i>
-                                Configuration du Webhook
+                                <i class="fas fa-webhook me-2"></i>
+                                Configuration des Webhooks
                             </h5>
                         </div>
                         <div class="card-body">
@@ -185,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                name="notifications_enabled" 
                                                <?php echo ($config['notifications_enabled'] ?? false) ? 'checked' : ''; ?>>
                                         <label class="form-check-label" for="notifications_enabled">
-                                            <strong>Activer les notifications Discord</strong>
+                                            <strong>Activer les webhooks Discord</strong>
                                         </label>
                                     </div>
                                 </div>
@@ -193,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="mb-3">
                                     <label class="form-label">
                                         <i class="fas fa-bell me-1"></i>
-                                        Types de notifications
+                                        Types de notifications webhook
                                     </label>
                                     <div class="row">
                                         <div class="col-md-6">
@@ -202,7 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                        type="checkbox" 
                                                        id="notify_sales" 
                                                        name="notify_sales" 
-                                                       <?php echo ($config['notify_sales'] ?? false) ? 'checked' : ''; ?>>
+                                                       <?php echo ($config['notify_sales'] ?? true) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="notify_sales">
                                                     💰 Nouvelles ventes
                                                 </label>
@@ -210,11 +259,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <div class="form-check">
                                                 <input class="form-check-input" 
                                                        type="checkbox" 
-                                                       id="notify_goals" 
-                                                       name="notify_goals" 
-                                                       <?php echo ($config['notify_goals'] ?? false) ? 'checked' : ''; ?>>
-                                                <label class="form-check-label" for="notify_goals">
-                                                    🎯 Objectifs atteints
+                                                       id="notify_cleaning" 
+                                                       name="notify_cleaning" 
+                                                       <?php echo ($config['notify_cleaning'] ?? true) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label" for="notify_cleaning">
+                                                    🧹 Services de ménage
                                                 </label>
                                             </div>
                                         </div>
@@ -222,11 +271,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             <div class="form-check">
                                                 <input class="form-check-input" 
                                                        type="checkbox" 
-                                                       id="notify_errors" 
-                                                       name="notify_errors" 
-                                                       <?php echo ($config['notify_errors'] ?? false) ? 'checked' : ''; ?>>
-                                                <label class="form-check-label" for="notify_errors">
-                                                    ⚠️ Erreurs système
+                                                       id="notify_goals" 
+                                                       name="notify_goals" 
+                                                       <?php echo ($config['notify_goals'] ?? true) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label" for="notify_goals">
+                                                    🎯 Objectifs atteints
                                                 </label>
                                             </div>
                                             <div class="form-check">
@@ -234,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                        type="checkbox" 
                                                        id="notify_weekly_summary" 
                                                        name="notify_weekly_summary" 
-                                                       <?php echo ($config['notify_weekly_summary'] ?? false) ? 'checked' : ''; ?>>
+                                                       <?php echo ($config['notify_weekly_summary'] ?? true) ? 'checked' : ''; ?>>
                                                 <label class="form-check-label" for="notify_weekly_summary">
                                                     📊 Résumés hebdomadaires
                                                 </label>
@@ -262,25 +311,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="card-header">
                             <h5 class="mb-0">
                                 <i class="fas fa-flask me-2"></i>
-                                Tests et Exemples
+                                Tests des Webhooks
                             </h5>
                         </div>
                         <div class="card-body">
-                            <p class="text-muted">Testez les différents types de notifications Discord :</p>
+                            <p class="text-muted">Testez les différents types de webhooks Discord :</p>
                             
-                            <form method="POST" class="d-inline">
-                                <button type="submit" name="send_test_sale" class="btn btn-outline-success me-2">
-                                    <i class="fas fa-cash-register me-1"></i>
-                                    Test Notification Vente
-                                </button>
-                            </form>
-                            
-                            <a href="../examples/discord_integration_example.php" 
-                               class="btn btn-outline-info me-2" 
-                               target="_blank">
-                                <i class="fas fa-code me-1"></i>
-                                Voir les Exemples
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <form method="POST" class="d-inline">
+                                    <button type="submit" name="send_test_sale" class="btn btn-outline-success">
+                                        <i class="fas fa-cash-register me-1"></i>
+                                        Test Vente
+                                    </button>
+                                </form>
+                                
+                                <form method="POST" class="d-inline">
+                                    <button type="submit" name="send_test_cleaning" class="btn btn-outline-primary">
+                                        <i class="fas fa-broom me-1"></i>
+                                        Test Ménage
+                                    </button>
+                                </form>
+                                
+                                <a href="../examples/discord_integration_example.php" 
+                                   class="btn btn-outline-info" 
+                                   target="_blank">
+                                    <i class="fas fa-code me-1"></i>
+                                    Exemples
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -291,7 +349,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="card-header">
                             <h5 class="mb-0">
                                 <i class="fas fa-info-circle me-2"></i>
-                                Statut Discord
+                                Statut des Webhooks
                             </h5>
                         </div>
                         <div class="card-body">
@@ -312,18 +370,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                             
                             <div class="mb-3">
-                                <strong>Types de notifications :</strong>
+                                <strong>Types de webhooks disponibles :</strong>
                                 <ul class="list-unstyled mt-2 small">
                                     <li><i class="fas fa-check text-success me-1"></i> Nouvelles ventes</li>
+                                    <li><i class="fas fa-check text-success me-1"></i> Services de ménage</li>
                                     <li><i class="fas fa-check text-success me-1"></i> Objectifs atteints</li>
-                                    <li><i class="fas fa-check text-success me-1"></i> Erreurs système</li>
                                     <li><i class="fas fa-check text-success me-1"></i> Résumés hebdomadaires</li>
                                 </ul>
                             </div>
                             
                             <div class="alert alert-info small">
                                 <i class="fas fa-lightbulb me-1"></i>
-                                <strong>Conseil :</strong> Créez un canal dédié dans votre serveur Discord pour les notifications du Yellowjack.
+                                <strong>Conseil :</strong> Créez un canal dédié dans votre serveur Discord pour recevoir les webhooks du Yellowjack.
                             </div>
                         </div>
                     </div>
