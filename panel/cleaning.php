@@ -23,9 +23,7 @@ $db = getDB();
 $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cleaning_rate'");
 $stmt->execute();
 $cleaning_rate_setting = $stmt->fetchColumn();
-if (!defined('CLEANING_RATE')) {
-    define('CLEANING_RATE', floatval($cleaning_rate_setting ?: 60));
-}
+$CLEANING_RATE = floatval($cleaning_rate_setting ?: 60);
 
 // Récupérer le taux de ménage spécifique à l'utilisateur
 $user_cleaning_rate_key = '';
@@ -49,7 +47,7 @@ switch ($user['role']) {
 
 $stmt_user_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ?");
 $stmt_user_rate->execute([$user_cleaning_rate_key]);
-$user_cleaning_rate = floatval($stmt_user_rate->fetchColumn() ?: CLEANING_RATE);
+$user_cleaning_rate = floatval($stmt_user_rate->fetchColumn() ?: $CLEANING_RATE);
 
 // Les fonctions getCurrentDateTime() et calculateDuration() sont maintenant définies dans config/database.php
 
@@ -116,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $duration = $duration_data['total_minutes'];
                             
                             // Utiliser le taux de ménage depuis les paramètres
-                            $company_revenue_per_cleaning = CLEANING_RATE;
+                            $company_revenue_per_cleaning = $CLEANING_RATE;
                             $total_company_revenue = $cleaning_count * $company_revenue_per_cleaning;
                             
                             // Récupérer le pourcentage de commission selon le rôle depuis les paramètres
@@ -450,8 +448,8 @@ $page_title = 'Gestion des Ménages';
                             <label for="cleaning_count" class="form-label">Nombre de ménages effectués</label>
                             <input type="number" class="form-control" id="cleaning_count" name="cleaning_count" min="0" required>
                             <div class="form-text">
-                                Commission: <?php echo $user_cleaning_percentage; ?>% sur <?php echo CLEANING_RATE; ?>$ par ménage (<?php echo $user['role']; ?>)
-                                <br><small class="text-muted">Salaire par ménage: <?php echo number_format((CLEANING_RATE * $user_cleaning_percentage) / 100, 2); ?>$</small>
+                                Commission: <?php echo $user_cleaning_percentage; ?>% sur <?php echo $CLEANING_RATE; ?>$ par ménage (<?php echo $user['role']; ?>)
+                        <br><small class="text-muted">Salaire par ménage: <?php echo number_format(($CLEANING_RATE * $user_cleaning_percentage) / 100, 2); ?>$</small>
                             </div>
                         </div>
                         
@@ -498,7 +496,7 @@ $page_title = 'Gestion des Ménages';
         document.getElementById('cleaning_count').addEventListener('input', function() {
             const count = parseInt(this.value) || 0;
             const percentage = <?php echo $user_cleaning_percentage; ?>;
-            const revenuePerCleaning = <?php echo CLEANING_RATE; ?>;
+            const revenuePerCleaning = <?php echo $CLEANING_RATE; ?>;
             const salaryPerCleaning = (revenuePerCleaning * percentage) / 100;
             const salary = count * salaryPerCleaning;
             
