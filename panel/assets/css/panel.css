@@ -31,11 +31,12 @@ body {
     top: 0;
     bottom: 0;
     left: 0;
-    z-index: 100;
+    z-index: 1000;
     padding: 48px 0 0;
-    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     background-color: #fff;
     width: var(--sidebar-width);
+    border-right: 1px solid #dee2e6;
 }
 
 .sidebar-sticky {
@@ -85,6 +86,20 @@ main.col-md-9.ms-sm-auto.col-lg-10 {
     width: calc(100% - var(--sidebar-width)) !important;
     max-width: none !important;
     padding: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Container fluid adjustments */
+.container-fluid {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Row adjustments */
+.container-fluid .row {
+    margin-left: 0;
+    margin-right: 0;
 }
 
 /* Responsive adjustments */
