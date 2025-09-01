@@ -750,81 +750,176 @@ $page_title = 'Configuration et Paramètres';
                     
                     <!-- Onglet Système -->
                     <div class="tab-pane fade" id="system" role="tabpanel">
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-server me-2"></i>
-                                    Informations Système
-                                </h5>
+                        <div class="mt-3">
+                            <!-- En-tête moderne -->
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="bg-primary bg-gradient rounded-circle p-3 me-3">
+                                    <i class="fas fa-server text-white fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h4 class="mb-1 text-primary">Informations Système</h4>
+                                    <p class="text-muted mb-0">État et configuration du serveur</p>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6 class="text-muted">Informations PHP</h6>
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <td><strong>Version PHP :</strong></td>
-                                                <td><?php echo PHP_VERSION; ?></td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Fuseau horaire :</strong></td>
-                                                <td><?php echo date_default_timezone_get(); ?></td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Date/Heure serveur :</strong></td>
-                                                <td><?php echo formatDate(getCurrentDateTime()); ?></td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Extensions requises :</strong></td>
-                                                <td>
-                                                    <?php
-                                                    $extensions = ['pdo', 'pdo_mysql', 'curl', 'json'];
-                                                    foreach ($extensions as $ext) {
-                                                        $loaded = extension_loaded($ext);
-                                                        echo '<span class="badge bg-' . ($loaded ? 'success' : 'danger') . ' me-1">' . $ext . '</span>';
-                                                    }
-                                                    ?>
-                                                </td>
-                                            </tr>
-                                        </table>
+
+                            <!-- Cartes d'informations modernes -->
+                            <div class="row g-4 mb-4">
+                                <!-- Carte PHP -->
+                                <div class="col-lg-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-gradient-primary text-white border-0">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fab fa-php me-2 fa-lg"></i>
+                                                <h6 class="mb-0 fw-bold">Configuration PHP</h6>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-12">
+                                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="fas fa-code text-primary me-2"></i>
+                                                            <span class="fw-medium">Version PHP</span>
+                                                        </div>
+                                                        <span class="badge bg-primary fs-6"><?php echo PHP_VERSION; ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="fas fa-globe text-info me-2"></i>
+                                                            <span class="fw-medium">Fuseau horaire</span>
+                                                        </div>
+                                                        <span class="text-muted"><?php echo date_default_timezone_get(); ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="fas fa-clock text-warning me-2"></i>
+                                                            <span class="fw-medium">Date/Heure serveur</span>
+                                                        </div>
+                                                        <span class="text-muted"><?php echo formatDate(getCurrentDateTime()); ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="p-3 bg-light rounded">
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            <i class="fas fa-puzzle-piece text-success me-2"></i>
+                                                            <span class="fw-medium">Extensions PHP</span>
+                                                        </div>
+                                                        <div class="d-flex flex-wrap gap-1">
+                                                            <?php
+                                                            $extensions = ['pdo', 'pdo_mysql', 'curl', 'json'];
+                                                            foreach ($extensions as $ext) {
+                                                                $loaded = extension_loaded($ext);
+                                                                echo '<span class="badge bg-' . ($loaded ? 'success' : 'danger') . ' me-1">' . $ext . '</span>';
+                                                            }
+                                                            ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <h6 class="text-muted">Base de données</h6>
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <td><strong>Serveur :</strong></td>
-                                                <td><?php echo DB_HOST . ':' . DB_PORT; ?></td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Base de données :</strong></td>
-                                                <td><?php echo DB_NAME; ?></td>
-                                            </tr>
-                                            <tr>
-                                                <td><strong>Statut :</strong></td>
-                                                <td>
-                                                    <?php
-                                                    try {
-                                                        $db->query('SELECT 1');
-                                                        echo '<span class="badge bg-success">Connecté</span>';
-                                                    } catch (Exception $e) {
-                                                        echo '<span class="badge bg-danger">Erreur</span>';
-                                                    }
-                                                    ?>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                        
-                                        <h6 class="text-muted mt-3">Actions système</h6>
-                                        <div class="d-grid gap-2">
-                                            <form method="POST" class="d-inline">
-                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
-                                                <input type="hidden" name="action" value="backup_database">
-                                                <button type="submit" class="btn btn-outline-warning btn-sm w-100" 
-                                                        onclick="return confirm('Créer une sauvegarde de la base de données ?')">
-                                                    <i class="fas fa-download me-2"></i>
-                                                    Sauvegarder la base
-                                                </button>
-                                            </form>
+                                </div>
+
+                                <!-- Carte Base de données -->
+                                <div class="col-lg-6">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-gradient-success text-white border-0">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-database me-2 fa-lg"></i>
+                                                <h6 class="mb-0 fw-bold">Base de Données</h6>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <div class="col-12">
+                                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="fas fa-server text-primary me-2"></i>
+                                                            <span class="fw-medium">Serveur</span>
+                                                        </div>
+                                                        <span class="text-muted font-monospace"><?php echo DB_HOST . ':' . DB_PORT; ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="fas fa-database text-info me-2"></i>
+                                                            <span class="fw-medium">Base de données</span>
+                                                        </div>
+                                                        <span class="text-muted font-monospace"><?php echo DB_NAME; ?></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="fas fa-heartbeat text-danger me-2"></i>
+                                                            <span class="fw-medium">Statut de connexion</span>
+                                                        </div>
+                                                        <div>
+                                                            <?php
+                                                            try {
+                                                                $db->query('SELECT 1');
+                                                                echo '<span class="badge bg-success fs-6"><i class="fas fa-check-circle me-1"></i>Connecté</span>';
+                                                            } catch (Exception $e) {
+                                                                echo '<span class="badge bg-danger fs-6"><i class="fas fa-times-circle me-1"></i>Erreur</span>';
+                                                            }
+                                                            ?>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section Actions Système -->
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-gradient-warning text-dark border-0">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-tools me-2 fa-lg"></i>
+                                        <h6 class="mb-0 fw-bold">Actions Système</h6>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center p-4 bg-light rounded-3 h-100">
+                                                <div class="bg-warning bg-gradient rounded-circle p-3 me-3">
+                                                    <i class="fas fa-download text-white"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">Sauvegarde de la base de données</h6>
+                                                    <p class="text-muted mb-3 small">Créer une copie de sécurité complète de toutes les données</p>
+                                                    <form method="POST" class="d-inline">
+                                                        <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                                        <input type="hidden" name="action" value="backup_database">
+                                                        <button type="submit" class="btn btn-warning btn-sm fw-medium" onclick="return confirm('Créer une sauvegarde de la base de données ?')">
+                                                            <i class="fas fa-database me-2"></i>
+                                                            Créer la sauvegarde
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center p-4 bg-light rounded-3 h-100">
+                                                <div class="bg-info bg-gradient rounded-circle p-3 me-3">
+                                                    <i class="fas fa-info-circle text-white"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">Informations système</h6>
+                                                    <p class="text-muted mb-3 small">Système opérationnel et fonctionnel</p>
+                                                    <span class="badge bg-success fs-6">
+                                                        <i class="fas fa-check-circle me-1"></i>
+                                                        Tout fonctionne correctement
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -834,295 +929,466 @@ $page_title = 'Configuration et Paramètres';
                     
                     <!-- Onglet Commissions -->
                     <div class="tab-pane fade" id="commissions" role="tabpanel">
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-percentage me-2"></i>
-                                    Gestion des Commissions par Grade
-                                </h5>
+                        <div class="container-fluid px-0">
+                            <!-- En-tête avec statistiques -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-sm bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <div class="card-body text-white">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <h4 class="mb-2"><i class="fas fa-percentage me-3"></i>Gestion des Commissions</h4>
+                                                    <p class="mb-0 opacity-75">Configurez les taux de rémunération par grade et optimisez la motivation de vos équipes</p>
+                                                </div>
+                                                <div class="col-md-4 text-end">
+                                                    <div class="d-flex justify-content-end gap-3">
+                                                        <div class="text-center">
+                                                            <div class="h5 mb-0">4</div>
+                                                            <small class="opacity-75">Grades</small>
+                                                        </div>
+                                                        <div class="text-center">
+                                                            <div class="h5 mb-0">2</div>
+                                                            <small class="opacity-75">Types</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    <strong>Information :</strong> Configurez les taux de commission pour les ventes et ménages selon le grade de l'employé.
+
+                            <form method="POST">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                <input type="hidden" name="action" value="update_commissions">
+                                
+                                <!-- Commissions Ventes -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header bg-white border-0 pb-0">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <h5 class="mb-1"><i class="fas fa-chart-line text-success me-2"></i>Commissions sur Ventes</h5>
+                                                        <p class="text-muted mb-0 small">Pourcentage de commission sur le chiffre d'affaires généré</p>
+                                                    </div>
+                                                    <div class="badge bg-success-subtle text-success px-3 py-2">
+                                                        <i class="fas fa-percentage me-1"></i>Pourcentage
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body pt-3">
+                                                <div class="row g-4">
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="commission-card h-100">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="commission-icon bg-info-subtle text-info me-3">
+                                                                    <i class="fas fa-user-clock"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">CDD</h6>
+                                                                    <small class="text-muted">Contrat Déterminé</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group input-group-lg">
+                                                                <input type="number" class="form-control border-2" id="commission_cdd_sales" name="commission_cdd_sales" 
+                                                                       value="<?php echo htmlspecialchars($settings['commission_cdd_sales'] ?? '0'); ?>" 
+                                                                       step="0.01" min="0" max="100" style="font-weight: 600;">
+                                                                <span class="input-group-text bg-info text-white border-2 border-info">%</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="commission-card h-100">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="commission-icon bg-primary-subtle text-primary me-3">
+                                                                    <i class="fas fa-user-check"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">CDI</h6>
+                                                                    <small class="text-muted">Contrat Indéterminé</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group input-group-lg">
+                                                                <input type="number" class="form-control border-2" id="commission_cdi_sales" name="commission_cdi_sales" 
+                                                                       value="<?php echo htmlspecialchars($settings['commission_cdi_sales'] ?? '15'); ?>" 
+                                                                       step="0.01" min="0" max="100" style="font-weight: 600;">
+                                                                <span class="input-group-text bg-primary text-white border-2 border-primary">%</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="commission-card h-100">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="commission-icon bg-warning-subtle text-warning me-3">
+                                                                    <i class="fas fa-user-tie"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">Responsable</h6>
+                                                                    <small class="text-muted">Chef d'équipe</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group input-group-lg">
+                                                                <input type="number" class="form-control border-2" id="commission_responsable_sales" name="commission_responsable_sales" 
+                                                                       value="<?php echo htmlspecialchars($settings['commission_responsable_sales'] ?? '20'); ?>" 
+                                                                       step="0.01" min="0" max="100" style="font-weight: 600;">
+                                                                <span class="input-group-text bg-warning text-white border-2 border-warning">%</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="commission-card h-100">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="commission-icon bg-danger-subtle text-danger me-3">
+                                                                    <i class="fas fa-crown"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">Patron</h6>
+                                                                    <small class="text-muted">Propriétaire</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group input-group-lg">
+                                                                <input type="number" class="form-control border-2" id="commission_patron_sales" name="commission_patron_sales" 
+                                                                       value="<?php echo htmlspecialchars($settings['commission_patron_sales'] ?? '25'); ?>" 
+                                                                       step="0.01" min="0" max="100" style="font-weight: 600;">
+                                                                <span class="input-group-text bg-danger text-white border-2 border-danger">%</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                <form method="POST">
-                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
-                                    <input type="hidden" name="action" value="update_commissions">
-                                    
-                                    <div class="row">
-                                        <!-- Commissions Ventes -->
-                                        <div class="col-md-6">
-                                            <h6 class="text-primary mb-3">
-                                                <i class="fas fa-shopping-cart me-2"></i>
-                                                Commissions Ventes (%)
-                                            </h6>
-                                            
-                                            <div class="mb-3">
-                                                <label for="commission_cdd_sales" class="form-label">CDD</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="commission_cdd_sales" name="commission_cdd_sales" 
-                                                           value="<?php echo htmlspecialchars($settings['commission_cdd_sales'] ?? '0'); ?>" 
-                                                           step="0.01" min="0" max="100">
-                                                    <span class="input-group-text">%</span>
+                                <!-- Taux Ménages -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header bg-white border-0 pb-0">
+                                                <div class="d-flex align-items-center justify-content-between">
+                                                    <div>
+                                                        <h5 class="mb-1"><i class="fas fa-home text-info me-2"></i>Rémunération Ménages</h5>
+                                                        <p class="text-muted mb-0 small">Montant fixe par ménage effectué selon le grade</p>
+                                                    </div>
+                                                    <div class="badge bg-info-subtle text-info px-3 py-2">
+                                                        <i class="fas fa-dollar-sign me-1"></i>Montant fixe
+                                                    </div>
                                                 </div>
                                             </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="commission_cdi_sales" class="form-label">CDI</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="commission_cdi_sales" name="commission_cdi_sales" 
-                                                           value="<?php echo htmlspecialchars($settings['commission_cdi_sales'] ?? '15'); ?>" 
-                                                           step="0.01" min="0" max="100">
-                                                    <span class="input-group-text">%</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="commission_responsable_sales" class="form-label">Responsable</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="commission_responsable_sales" name="commission_responsable_sales" 
-                                                           value="<?php echo htmlspecialchars($settings['commission_responsable_sales'] ?? '20'); ?>" 
-                                                           step="0.01" min="0" max="100">
-                                                    <span class="input-group-text">%</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="commission_patron_sales" class="form-label">Patron</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="commission_patron_sales" name="commission_patron_sales" 
-                                                           value="<?php echo htmlspecialchars($settings['commission_patron_sales'] ?? '25'); ?>" 
-                                                           step="0.01" min="0" max="100">
-                                                    <span class="input-group-text">%</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Commissions Ménages -->
-                                        <div class="col-md-6">
-                                            <h6 class="text-success mb-3">
-                                                <i class="fas fa-broom me-2"></i>
-                                                Taux Ménages ($/ménage)
-                                            </h6>
-                                            
-                                            <div class="mb-3">
-                                                <label for="cleaning_rate_cdd" class="form-label">CDD</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="cleaning_rate_cdd" name="cleaning_rate_cdd" 
-                                                           value="<?php echo htmlspecialchars($settings['cleaning_rate_cdd'] ?? '50'); ?>" 
-                                                           step="0.01" min="0.01">
-                                                    <span class="input-group-text">$</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="cleaning_rate_cdi" class="form-label">CDI</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="cleaning_rate_cdi" name="cleaning_rate_cdi" 
-                                                           value="<?php echo htmlspecialchars($settings['cleaning_rate_cdi'] ?? '60'); ?>" 
-                                                           step="0.01" min="0.01">
-                                                    <span class="input-group-text">$</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="cleaning_rate_responsable" class="form-label">Responsable</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="cleaning_rate_responsable" name="cleaning_rate_responsable" 
-                                                           value="<?php echo htmlspecialchars($settings['cleaning_rate_responsable'] ?? '70'); ?>" 
-                                                           step="0.01" min="0.01">
-                                                    <span class="input-group-text">$</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="mb-3">
-                                                <label for="cleaning_rate_patron" class="form-label">Patron</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="cleaning_rate_patron" name="cleaning_rate_patron" 
-                                                           value="<?php echo htmlspecialchars($settings['cleaning_rate_patron'] ?? '80'); ?>" 
-                                                           step="0.01" min="0.01">
-                                                    <span class="input-group-text">$</span>
+                                            <div class="card-body pt-3">
+                                                <div class="row g-4">
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="commission-card h-100">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="commission-icon bg-info-subtle text-info me-3">
+                                                                    <i class="fas fa-broom"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">CDD</h6>
+                                                                    <small class="text-muted">Par ménage</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group input-group-lg">
+                                                                <span class="input-group-text bg-info text-white border-2 border-info">$</span>
+                                                                <input type="number" class="form-control border-2" id="cleaning_rate_cdd" name="cleaning_rate_cdd" 
+                                                                       value="<?php echo htmlspecialchars($settings['cleaning_rate_cdd'] ?? '50'); ?>" 
+                                                                       step="0.01" min="0.01" style="font-weight: 600;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="commission-card h-100">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="commission-icon bg-primary-subtle text-primary me-3">
+                                                                    <i class="fas fa-broom"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">CDI</h6>
+                                                                    <small class="text-muted">Par ménage</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group input-group-lg">
+                                                                <span class="input-group-text bg-primary text-white border-2 border-primary">$</span>
+                                                                <input type="number" class="form-control border-2" id="cleaning_rate_cdi" name="cleaning_rate_cdi" 
+                                                                       value="<?php echo htmlspecialchars($settings['cleaning_rate_cdi'] ?? '60'); ?>" 
+                                                                       step="0.01" min="0.01" style="font-weight: 600;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="commission-card h-100">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="commission-icon bg-warning-subtle text-warning me-3">
+                                                                    <i class="fas fa-broom"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">Responsable</h6>
+                                                                    <small class="text-muted">Par ménage</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group input-group-lg">
+                                                                <span class="input-group-text bg-warning text-white border-2 border-warning">$</span>
+                                                                <input type="number" class="form-control border-2" id="cleaning_rate_responsable" name="cleaning_rate_responsable" 
+                                                                       value="<?php echo htmlspecialchars($settings['cleaning_rate_responsable'] ?? '70'); ?>" 
+                                                                       step="0.01" min="0.01" style="font-weight: 600;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 col-lg-3">
+                                                        <div class="commission-card h-100">
+                                                            <div class="d-flex align-items-center mb-3">
+                                                                <div class="commission-icon bg-danger-subtle text-danger me-3">
+                                                                    <i class="fas fa-broom"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6 class="mb-0">Patron</h6>
+                                                                    <small class="text-muted">Par ménage</small>
+                                                                </div>
+                                                            </div>
+                                                            <div class="input-group input-group-lg">
+                                                                <span class="input-group-text bg-danger text-white border-2 border-danger">$</span>
+                                                                <input type="number" class="form-control border-2" id="cleaning_rate_patron" name="cleaning_rate_patron" 
+                                                                       value="<?php echo htmlspecialchars($settings['cleaning_rate_patron'] ?? '80'); ?>" 
+                                                                       step="0.01" min="0.01" style="font-weight: 600;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    <!-- Options supplémentaires -->
-                                    <hr class="my-4">
-                                    <h6 class="text-warning mb-3">
-                                        <i class="fas fa-cogs me-2"></i>
-                                        Options Supplémentaires
-                                    </h6>
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="bonus_weekend_rate" class="form-label">Bonus Week-end (%)</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="bonus_weekend_rate" name="bonus_weekend_rate" 
-                                                           value="<?php echo htmlspecialchars($settings['bonus_weekend_rate'] ?? '10'); ?>" 
-                                                           step="0.01" min="0" max="100">
-                                                    <span class="input-group-text">%</span>
-                                                </div>
-                                                <div class="form-text">Bonus appliqué les samedi et dimanche</div>
+                                </div>
+                                
+                                <!-- Options Avancées -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header bg-white border-0 pb-0">
+                                                <h5 class="mb-1"><i class="fas fa-cogs text-secondary me-2"></i>Options Avancées</h5>
+                                                <p class="text-muted mb-0 small">Bonus et paramètres supplémentaires pour optimiser la rémunération</p>
                                             </div>
-                                        </div>
-                                        
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="bonus_night_rate" class="form-label">Bonus Nuit (%)</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control" id="bonus_night_rate" name="bonus_night_rate" 
-                                                           value="<?php echo htmlspecialchars($settings['bonus_night_rate'] ?? '15'); ?>" 
-                                                           step="0.01" min="0" max="100">
-                                                    <span class="input-group-text">%</span>
+                                            <div class="card-body pt-3">
+                                                <div class="row g-4">
+                                                    <!-- Bonus temporels -->
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-light border-0 h-100">
+                                                            <div class="card-body">
+                                                                <h6 class="mb-3"><i class="fas fa-clock text-warning me-2"></i>Bonus Temporels</h6>
+                                                                <div class="row g-3">
+                                                                    <div class="col-12">
+                                                                        <label for="bonus_weekend_rate" class="form-label fw-semibold">Bonus Week-end</label>
+                                                                        <div class="input-group">
+                                                                            <input type="number" class="form-control" id="bonus_weekend_rate" name="bonus_weekend_rate" 
+                                                                                   value="<?php echo htmlspecialchars($settings['bonus_weekend_rate'] ?? '10'); ?>" 
+                                                                                   step="0.01" min="0" max="100">
+                                                                            <span class="input-group-text bg-warning text-white">%</span>
+                                                                        </div>
+                                                                        <div class="form-text"><i class="fas fa-calendar-weekend me-1"></i>Samedi et dimanche</div>
+                                                                    </div>
+                                                                    <div class="col-12">
+                                                                        <label for="bonus_night_rate" class="form-label fw-semibold">Bonus Nuit</label>
+                                                                        <div class="input-group">
+                                                                            <input type="number" class="form-control" id="bonus_night_rate" name="bonus_night_rate" 
+                                                                                   value="<?php echo htmlspecialchars($settings['bonus_night_rate'] ?? '15'); ?>" 
+                                                                                   step="0.01" min="0" max="100">
+                                                                            <span class="input-group-text bg-dark text-white">%</span>
+                                                                        </div>
+                                                                        <div class="form-text"><i class="fas fa-moon me-1"></i>22h00 à 06h00</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Bonus de performance -->
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-light border-0 h-100">
+                                                            <div class="card-body">
+                                                                <h6 class="mb-3"><i class="fas fa-trophy text-success me-2"></i>Bonus de Performance</h6>
+                                                                <div class="row g-3">
+                                                                    <div class="col-12">
+                                                                        <div class="form-check form-switch form-check-lg">
+                                                                            <input class="form-check-input" type="checkbox" id="enable_performance_bonus" name="enable_performance_bonus" 
+                                                                                   <?php echo ($settings['enable_performance_bonus'] ?? '1') == '1' ? 'checked' : ''; ?>>
+                                                                            <label class="form-check-label fw-semibold" for="enable_performance_bonus">
+                                                                                Bonus Individuels
+                                                                            </label>
+                                                                        </div>
+                                                                        <div class="form-text"><i class="fas fa-user-star me-1"></i>Basés sur les objectifs personnels</div>
+                                                                    </div>
+                                                                    <div class="col-12">
+                                                                        <div class="form-check form-switch form-check-lg">
+                                                                            <input class="form-check-input" type="checkbox" id="enable_team_bonus" name="enable_team_bonus" 
+                                                                                   <?php echo ($settings['enable_team_bonus'] ?? '0') == '1' ? 'checked' : ''; ?>>
+                                                                            <label class="form-check-label fw-semibold" for="enable_team_bonus">
+                                                                                Bonus d'Équipe
+                                                                            </label>
+                                                                        </div>
+                                                                        <div class="form-text"><i class="fas fa-users me-1"></i>Partagés selon les performances globales</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div class="form-text">Bonus appliqué de 22h à 6h</div>
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="enable_performance_bonus" name="enable_performance_bonus" 
-                                                           <?php echo ($settings['enable_performance_bonus'] ?? '1') == '1' ? 'checked' : ''; ?>>
-                                                    <label class="form-check-label" for="enable_performance_bonus">
-                                                        Activer les bonus de performance
-                                                    </label>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Les modifications seront appliquées immédiatement</small>
+                                                    </div>
+                                                    <div class="d-flex gap-2">
+                                                        <button type="button" class="btn btn-outline-secondary" onclick="location.reload()">
+                                                            <i class="fas fa-undo me-2"></i>Annuler
+                                                        </button>
+                                                        <button type="submit" class="btn btn-primary btn-lg px-4">
+                                                            <i class="fas fa-save me-2"></i>Sauvegarder les Commissions
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div class="form-text">Bonus automatiques basés sur les objectifs</div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="enable_team_bonus" name="enable_team_bonus" 
-                                                           <?php echo ($settings['enable_team_bonus'] ?? '0') == '1' ? 'checked' : ''; ?>>
-                                                    <label class="form-check-label" for="enable_team_bonus">
-                                                        Activer les bonus d'équipe
-                                                    </label>
-                                                </div>
-                                                <div class="form-text">Bonus partagés selon les performances globales</div>
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-save me-2"></i>
-                                            Sauvegarder les Commissions
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
+                                </div>
+                            </form>
                         </div>
                     </div>
                     
                     <?php if ($auth->hasPermission('Patron')): ?>
                     <!-- Onglet Vitrine -->
                     <div class="tab-pane fade" id="vitrine" role="tabpanel">
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-store me-2"></i>
-                                    Configuration de la Vitrine
-                                </h5>
+                        <div class="container-fluid py-4">
+                            <!-- En-tête avec gradient -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <div class="card-body text-white py-4">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <h3 class="mb-2"><i class="fas fa-store-alt me-3"></i>Configuration de la Vitrine</h3>
+                                                    <p class="mb-0 opacity-75">Personnalisez l'apparence et le contenu de votre site vitrine visible par les clients</p>
+                                                </div>
+                                                <div class="col-md-4 text-end">
+                                                    <div class="d-flex justify-content-end gap-2">
+                                                        <a href="../index.php" target="_blank" class="btn btn-light btn-sm">
+                                                            <i class="fas fa-external-link-alt me-2"></i>Aperçu
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <form method="POST">
-                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
-                                    <input type="hidden" name="action" value="update_vitrine">
-                                    
-                                    <div class="row mb-4">
-                                        <div class="col-md-12">
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-info-circle me-2"></i>
-                                                Cette section vous permet de personnaliser la vitrine du site visible par les clients.
+                            
+                            <form method="POST">
+                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRF(); ?>">
+                                <input type="hidden" name="action" value="update_vitrine">
+                                
+                                <!-- Informations générales du bar -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header bg-gradient-primary text-white border-0">
+                                                <h5 class="mb-0"><i class="fas fa-building me-2"></i>Informations du Bar</h5>
+                                            </div>
+                                            <div class="card-body p-4">
+                                                <div class="row g-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control form-control-lg" id="vitrine_bar_name" name="vitrine_bar_name" 
+                                                                   value="<?php echo htmlspecialchars($settings['bar_name'] ?? ''); ?>" placeholder="Nom du bar" required>
+                                                            <label for="vitrine_bar_name"><i class="fas fa-tag me-2"></i>Nom du bar *</label>
+                                                        </div>
+                                                        <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i>Nom principal affiché sur la vitrine</div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control form-control-lg" id="vitrine_bar_slogan" name="vitrine_bar_slogan" 
+                                                                   value="<?php echo htmlspecialchars($settings['bar_slogan'] ?? 'L\'authentique bar western de Sandy Shore'); ?>" placeholder="Slogan">
+                                                            <label for="vitrine_bar_slogan"><i class="fas fa-quote-left me-2"></i>Slogan</label>
+                                                        </div>
+                                                        <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i>Phrase d'accroche sous le nom</div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control" id="vitrine_bar_address" name="vitrine_bar_address" 
+                                                                   value="<?php echo htmlspecialchars($settings['bar_address'] ?? ''); ?>" placeholder="Adresse">
+                                                            <label for="vitrine_bar_address"><i class="fas fa-map-marker-alt me-2"></i>Adresse</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control" id="vitrine_bar_phone" name="vitrine_bar_phone" 
+                                                                   value="<?php echo htmlspecialchars($settings['bar_phone'] ?? ''); ?>" placeholder="Téléphone">
+                                                            <label for="vitrine_bar_phone"><i class="fas fa-phone me-2"></i>Téléphone</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                                     
-                                    <!-- Informations générales -->
-                                    <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-building me-2"></i> Informations du Bar</h6>
-                                    <div class="row mb-4">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="vitrine_bar_name" class="form-label">Nom du bar *</label>
-                                                <input type="text" class="form-control" id="vitrine_bar_name" name="vitrine_bar_name" 
-                                                       value="<?php echo htmlspecialchars($settings['bar_name'] ?? ''); ?>" required>
-                                                <div class="form-text">Nom affiché sur la vitrine</div>
+                                <!-- Configuration de la carte -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header bg-gradient-success text-white border-0">
+                                                <h5 class="mb-0"><i class="fas fa-utensils me-2"></i>Configuration de la Carte</h5>
                                             </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="vitrine_bar_slogan" class="form-label">Slogan</label>
-                                                <input type="text" class="form-control" id="vitrine_bar_slogan" name="vitrine_bar_slogan" 
-                                                       value="<?php echo htmlspecialchars($settings['bar_slogan'] ?? 'L\'authentique bar western de Sandy Shore'); ?>">
-                                                <div class="form-text">Court slogan affiché sous le nom du bar</div>
+                                            <div class="card-body p-4">
+                                                <div class="row g-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control" id="vitrine_menu_title" name="vitrine_menu_title" 
+                                                                   value="<?php echo htmlspecialchars($settings['menu_title'] ?? 'Notre Carte'); ?>" placeholder="Titre">
+                                                            <label for="vitrine_menu_title"><i class="fas fa-heading me-2"></i>Titre de la section</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating">
+                                                            <textarea class="form-control" id="vitrine_menu_description" name="vitrine_menu_description" 
+                                                                      placeholder="Description" style="height: 60px;"><?php echo htmlspecialchars($settings['menu_description'] ?? 'Découvrez notre sélection de boissons et plats dans l\'esprit western'); ?></textarea>
+                                                            <label for="vitrine_menu_description"><i class="fas fa-align-left me-2"></i>Description</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    <div class="row mb-4">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="vitrine_bar_address" class="form-label">Adresse</label>
-                                                <input type="text" class="form-control" id="vitrine_bar_address" name="vitrine_bar_address" 
-                                                       value="<?php echo htmlspecialchars($settings['bar_address'] ?? ''); ?>">
+                                </div>
+                                     
+                                <!-- Gestion des catégories de produits -->
+                                <div class="row">
+                                    <!-- Boissons Alcoolisées -->
+                                    <div class="col-12 mb-4">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%); color: white;">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0"><i class="fas fa-glass-whiskey me-2"></i>Boissons Alcoolisées</h6>
+                                                    <span class="badge bg-light text-dark">Premium</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="vitrine_bar_phone" class="form-label">Téléphone</label>
-                                                <input type="text" class="form-control" id="vitrine_bar_phone" name="vitrine_bar_phone" 
-                                                       value="<?php echo htmlspecialchars($settings['bar_phone'] ?? ''); ?>">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Carte des boissons et plats -->
-                                     <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-utensils me-2"></i> Carte des Boissons et Plats</h6>
-                                     
-                                     <div class="row mb-4">
-                                         <div class="col-md-12">
-                                             <div class="mb-3">
-                                                 <label for="vitrine_menu_title" class="form-label">Titre de la section Carte</label>
-                                                 <input type="text" class="form-control" id="vitrine_menu_title" name="vitrine_menu_title" 
-                                                        value="<?php echo htmlspecialchars($settings['menu_title'] ?? 'Notre Carte'); ?>">
-                                             </div>
-                                         </div>
-                                     </div>
-                                     
-                                     <div class="row mb-4">
-                                         <div class="col-md-12">
-                                             <div class="mb-3">
-                                                 <label for="vitrine_menu_description" class="form-label">Description de la carte</label>
-                                                 <textarea class="form-control" id="vitrine_menu_description" name="vitrine_menu_description" rows="2"><?php echo htmlspecialchars($settings['menu_description'] ?? 'Découvrez notre sélection de boissons et plats dans l\'esprit western'); ?></textarea>
-                                             </div>
-                                         </div>
-                                     </div>
-                                     
-                                     <!-- Boissons Alcoolisées -->
-                                     <div class="card mb-4">
-                                         <div class="card-header bg-light">
-                                             <h6 class="mb-0"><i class="fas fa-glass-whiskey me-2"></i> Boissons Alcoolisées</h6>
-                                         </div>
-                                         <div class="card-body">
-                                             <div class="row mb-3">
-                                                 <div class="col-md-12">
-                                                     <label for="vitrine_alcool_title" class="form-label">Titre de la catégorie</label>
-                                                     <div class="input-group">
-                                                         <span class="input-group-text"><i class="fas fa-glass-whiskey"></i></span>
-                                                         <input type="text" class="form-control" id="vitrine_alcool_title" name="vitrine_alcool_title" 
-                                                                value="<?php echo htmlspecialchars($settings['alcool_title'] ?? 'Boissons Alcoolisées'); ?>">
-                                                     </div>
-                                                 </div>
-                                             </div>
+                                            <div class="card-body p-4">
+                                                <div class="row mb-4">
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control" id="vitrine_alcool_title" name="vitrine_alcool_title" 
+                                                                   value="<?php echo htmlspecialchars($settings['alcool_title'] ?? 'Boissons Alcoolisées'); ?>" placeholder="Titre">
+                                                            <label for="vitrine_alcool_title"><i class="fas fa-glass-whiskey me-2"></i>Titre de la catégorie</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                              
                                              <!-- Produits alcoolisés -->
                                              <div class="menu-items-editor">
@@ -1180,21 +1446,24 @@ $page_title = 'Configuration et Paramètres';
                                      </div>
                                      
                                      <!-- Boissons Non-Alcoolisées -->
-                                     <div class="card mb-4">
-                                         <div class="card-header bg-light">
-                                             <h6 class="mb-0"><i class="fas fa-coffee me-2"></i> Boissons Non-Alcoolisées</h6>
-                                         </div>
-                                         <div class="card-body">
-                                             <div class="row mb-3">
-                                                 <div class="col-md-12">
-                                                     <label for="vitrine_soft_title" class="form-label">Titre de la catégorie</label>
-                                                     <div class="input-group">
-                                                         <span class="input-group-text"><i class="fas fa-coffee"></i></span>
-                                                         <input type="text" class="form-control" id="vitrine_soft_title" name="vitrine_soft_title" 
-                                                                value="<?php echo htmlspecialchars($settings['soft_title'] ?? 'Boissons Non-Alcoolisées'); ?>">
-                                                     </div>
+                                     <div class="col-12 mb-4">
+                                         <div class="card border-0 shadow-sm">
+                                             <div class="card-header" style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); color: white;">
+                                                 <div class="d-flex justify-content-between align-items-center">
+                                                     <h6 class="mb-0"><i class="fas fa-coffee me-2"></i>Boissons Non-Alcoolisées</h6>
+                                                     <span class="badge bg-light text-dark">Rafraîchissant</span>
                                                  </div>
                                              </div>
+                                             <div class="card-body p-4">
+                                                 <div class="row mb-4">
+                                                     <div class="col-md-12">
+                                                         <div class="form-floating">
+                                                             <input type="text" class="form-control" id="vitrine_soft_title" name="vitrine_soft_title" 
+                                                                    value="<?php echo htmlspecialchars($settings['soft_title'] ?? 'Boissons Non-Alcoolisées'); ?>" placeholder="Titre">
+                                                             <label for="vitrine_soft_title"><i class="fas fa-coffee me-2"></i>Titre de la catégorie</label>
+                                                         </div>
+                                                     </div>
+                                                 </div>
                                              
                                              <!-- Produits non-alcoolisés -->
                                              <div class="menu-items-editor">
@@ -1251,21 +1520,24 @@ $page_title = 'Configuration et Paramètres';
                                      </div>
                                      
                                      <!-- Snacks -->
-                                     <div class="card mb-4">
-                                         <div class="card-header bg-light">
-                                             <h6 class="mb-0"><i class="fas fa-utensils me-2"></i> Snacks</h6>
-                                         </div>
-                                         <div class="card-body">
-                                             <div class="row mb-3">
-                                                 <div class="col-md-12">
-                                                     <label for="vitrine_snacks_title" class="form-label">Titre de la catégorie</label>
-                                                     <div class="input-group">
-                                                         <span class="input-group-text"><i class="fas fa-utensils"></i></span>
-                                                         <input type="text" class="form-control" id="vitrine_snacks_title" name="vitrine_snacks_title" 
-                                                                value="<?php echo htmlspecialchars($settings['snacks_title'] ?? 'Snacks'); ?>">
-                                                     </div>
+                                     <div class="col-12 mb-4">
+                                         <div class="card border-0 shadow-sm">
+                                             <div class="card-header" style="background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%); color: white;">
+                                                 <div class="d-flex justify-content-between align-items-center">
+                                                     <h6 class="mb-0"><i class="fas fa-cookie-bite me-2"></i>Snacks</h6>
+                                                     <span class="badge bg-light text-dark">Gourmand</span>
                                                  </div>
                                              </div>
+                                             <div class="card-body p-4">
+                                                 <div class="row mb-4">
+                                                     <div class="col-md-12">
+                                                         <div class="form-floating">
+                                                             <input type="text" class="form-control" id="vitrine_snacks_title" name="vitrine_snacks_title" 
+                                                                    value="<?php echo htmlspecialchars($settings['snacks_title'] ?? 'Snacks'); ?>" placeholder="Titre">
+                                                             <label for="vitrine_snacks_title"><i class="fas fa-cookie-bite me-2"></i>Titre de la catégorie</label>
+                                                         </div>
+                                                     </div>
+                                                 </div>
                                              
                                              <!-- Produits snacks -->
                                              <div class="menu-items-editor">
@@ -1321,21 +1593,24 @@ $page_title = 'Configuration et Paramètres';
                                      </div>
                                      
                                      <!-- Plats -->
-                                     <div class="card mb-4">
-                                         <div class="card-header bg-light">
-                                             <h6 class="mb-0"><i class="fas fa-hamburger me-2"></i> Plats</h6>
-                                         </div>
-                                         <div class="card-body">
-                                             <div class="row mb-3">
-                                                 <div class="col-md-12">
-                                                     <label for="vitrine_plats_title" class="form-label">Titre de la catégorie</label>
-                                                     <div class="input-group">
-                                                         <span class="input-group-text"><i class="fas fa-hamburger"></i></span>
-                                                         <input type="text" class="form-control" id="vitrine_plats_title" name="vitrine_plats_title" 
-                                                                value="<?php echo htmlspecialchars($settings['plats_title'] ?? 'Plats'); ?>">
-                                                     </div>
+                                     <div class="col-12 mb-4">
+                                         <div class="card border-0 shadow-sm">
+                                             <div class="card-header" style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%); color: white;">
+                                                 <div class="d-flex justify-content-between align-items-center">
+                                                     <h6 class="mb-0"><i class="fas fa-hamburger me-2"></i>Plats</h6>
+                                                     <span class="badge bg-light text-dark">Savoureux</span>
                                                  </div>
                                              </div>
+                                             <div class="card-body p-4">
+                                                 <div class="row mb-4">
+                                                     <div class="col-md-12">
+                                                         <div class="form-floating">
+                                                             <input type="text" class="form-control" id="vitrine_plats_title" name="vitrine_plats_title" 
+                                                                    value="<?php echo htmlspecialchars($settings['plats_title'] ?? 'Plats'); ?>" placeholder="Titre">
+                                                             <label for="vitrine_plats_title"><i class="fas fa-hamburger me-2"></i>Titre de la catégorie</label>
+                                                         </div>
+                                                     </div>
+                                                 </div>
                                              
                                              <!-- Produits plats -->
                                              <div class="menu-items-editor">
@@ -1390,33 +1665,47 @@ $page_title = 'Configuration et Paramètres';
                                          </div>
                                      </div>
                                     
-                                    <!-- Équipe -->
-                                    <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-users me-2"></i> Section Équipe</h6>
-                                    
-                                    <div class="row mb-4">
-                                        <div class="col-md-12">
-                                            <div class="mb-3">
-                                                <label for="vitrine_team_title" class="form-label">Titre de la section Équipe</label>
-                                                <input type="text" class="form-control" id="vitrine_team_title" name="vitrine_team_title" 
-                                                       value="<?php echo htmlspecialchars($settings['team_title'] ?? 'Notre Équipe'); ?>">
+                                    <!-- Section Équipe -->
+                                    <div class="col-12 mb-4">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header" style="background: linear-gradient(135deg, #55a3ff 0%, #003d82 100%); color: white;">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0"><i class="fas fa-users me-2"></i>Section Équipe</h6>
+                                                    <span class="badge bg-light text-dark">Professionnel</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="row mb-4">
-                                        <div class="col-md-12">
-                                            <div class="mb-3">
-                                                <label for="vitrine_team_description" class="form-label">Description de l'équipe</label>
-                                                <textarea class="form-control" id="vitrine_team_description" name="vitrine_team_description" rows="2"><?php echo htmlspecialchars($settings['team_description'] ?? 'Rencontrez l\'équipe passionnée du Yellowjack'); ?></textarea>
+                                            <div class="card-body p-4">
+                                                <div class="row mb-4">
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control" id="vitrine_team_title" name="vitrine_team_title" 
+                                                                   value="<?php echo htmlspecialchars($settings['team_title'] ?? 'Notre Équipe'); ?>" placeholder="Titre">
+                                                            <label for="vitrine_team_title"><i class="fas fa-users me-2"></i>Titre de la section Équipe</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row mb-4">
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating">
+                                                            <textarea class="form-control" id="vitrine_team_description" name="vitrine_team_description" 
+                                                                     style="height: 80px;" placeholder="Description"><?php echo htmlspecialchars($settings['team_description'] ?? 'Rencontrez l\'équipe passionnée du Yellowjack'); ?></textarea>
+                                                            <label for="vitrine_team_description"><i class="fas fa-align-left me-2"></i>Description de l'équipe</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     <!-- Membres de l'équipe -->
-                                    <div class="card mb-4">
-                                        <div class="card-header bg-light">
-                                            <h6 class="mb-0"><i class="fas fa-users me-2"></i> Membres de l'équipe</h6>
-                                        </div>
+                                    <div class="col-12 mb-4">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header" style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); color: white;">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0"><i class="fas fa-user-friends me-2"></i>Membres de l'équipe</h6>
+                                                    <span class="badge bg-light text-dark">Dynamique</span>
+                                                </div>
+                                            </div>
                                         <div class="card-body">
                                             <div class="team-members-container">
                                                 <?php
@@ -1495,22 +1784,32 @@ $page_title = 'Configuration et Paramètres';
                                         </div>
                                     </div>
                                     
-                                    <!-- Contact -->
-                                    <h6 class="mb-3 border-bottom pb-2"><i class="fas fa-envelope me-2"></i> Section Contact</h6>
-                                    
-                                    <div class="row mb-4">
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="vitrine_contact_title" class="form-label">Titre de la section Contact</label>
-                                                <input type="text" class="form-control" id="vitrine_contact_title" name="vitrine_contact_title" 
-                                                       value="<?php echo htmlspecialchars($settings['contact_title'] ?? 'Nous Contacter'); ?>">
+                                    <!-- Section Contact -->
+                                    <div class="col-12 mb-4">
+                                        <div class="card border-0 shadow-sm">
+                                            <div class="card-header" style="background: linear-gradient(135deg, #00b894 0%, #00a085 100%); color: white;">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0"><i class="fas fa-envelope me-2"></i>Section Contact</h6>
+                                                    <span class="badge bg-light text-dark">Accessible</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="mb-3">
-                                                <label for="vitrine_contact_hours" class="form-label">Horaires d'ouverture</label>
-                                                <input type="text" class="form-control" id="vitrine_contact_hours" name="vitrine_contact_hours" 
-                                                       value="<?php echo htmlspecialchars($settings['contact_hours'] ?? 'Ouvert 24h/24, 7j/7'); ?>">
+                                            <div class="card-body p-4">
+                                                <div class="row mb-4">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control" id="vitrine_contact_title" name="vitrine_contact_title" 
+                                                                   value="<?php echo htmlspecialchars($settings['contact_title'] ?? 'Nous Contacter'); ?>" placeholder="Titre">
+                                                            <label for="vitrine_contact_title"><i class="fas fa-envelope me-2"></i>Titre de la section Contact</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating">
+                                                            <input type="text" class="form-control" id="vitrine_contact_hours" name="vitrine_contact_hours" 
+                                                                   value="<?php echo htmlspecialchars($settings['contact_hours'] ?? 'Ouvert 24h/24, 7j/7'); ?>" placeholder="Horaires">
+                                                            <label for="vitrine_contact_hours"><i class="fas fa-clock me-2"></i>Horaires d'ouverture</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1533,92 +1832,205 @@ $page_title = 'Configuration et Paramètres';
                     
                     <!-- Onglet À propos -->
                     <div class="tab-pane fade" id="about" role="tabpanel">
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    À propos du système
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <h4 class="text-primary">🤠 Le Yellowjack - Panel de Gestion</h4>
-                                        <p class="lead">Système de gestion complet pour bar western dans l'univers GTA V / FiveM</p>
+                        <div class="container-fluid mt-3">
+                            <div class="row">
+                                <!-- En-tête principal -->
+                                <div class="col-12 mb-4">
+                                    <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                        <div class="card-body text-center py-5">
+                                            <div class="mb-4">
+                                                <i class="fas fa-hat-cowboy fa-4x mb-3" style="color: #ffd700;"></i>
+                                            </div>
+                                            <h2 class="display-5 fw-bold mb-3">🤠 Le Yellowjack</h2>
+                                            <h4 class="mb-3">Panel de Gestion</h4>
+                                            <p class="lead fs-5">Système de gestion complet pour bar western dans l'univers GTA V / FiveM</p>
+                                            <div class="mt-4">
+                                                <span class="badge bg-light text-dark fs-6 px-3 py-2 me-2">Version 1.0.0</span>
+                                                <span class="badge bg-warning text-dark fs-6 px-3 py-2">Production Ready</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Fonctionnalités principales -->
+                                <div class="col-md-8 mb-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-header" style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); color: white;">
+                                            <h5 class="mb-0"><i class="fas fa-star me-2"></i>Fonctionnalités Principales</h5>
+                                        </div>
+                                        <div class="card-body p-4">
                                         
-                                        <h6 class="text-muted">Fonctionnalités principales :</h6>
-                                        <ul class="list-unstyled">
-                                            <li><i class="fas fa-check text-success me-2"></i> Gestion des ménages avec calcul automatique des salaires</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Caisse enregistreuse avec gestion des stocks</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Système de commissions pour les employés</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Gestion des clients fidèles avec réductions</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Rapports et analyses détaillés</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Intégration Discord pour les notifications</li>
-                                            <li><i class="fas fa-check text-success me-2"></i> Système de rôles hiérarchisés</li>
-                                        </ul>
-                                        
-                                        <h6 class="text-muted">Rôles disponibles :</h6>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="card border-primary">
-                                                    <div class="card-body">
-                                                        <h6 class="card-title text-primary">CDD</h6>
-                                                        <p class="card-text small">Accès aux ménages uniquement</p>
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                                        <div class="flex-shrink-0">
+                                                            <i class="fas fa-broom fa-2x text-primary"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1 ms-3">
+                                                            <h6 class="mb-1">Gestion des Ménages</h6>
+                                                            <small class="text-muted">Calcul automatique des salaires</small>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="card border-info">
-                                                    <div class="card-body">
-                                                        <h6 class="card-title text-info">CDI</h6>
-                                                        <p class="card-text small">Ménages + Caisse enregistreuse</p>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                                        <div class="flex-shrink-0">
+                                                            <i class="fas fa-cash-register fa-2x text-success"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1 ms-3">
+                                                            <h6 class="mb-1">Caisse Enregistreuse</h6>
+                                                            <small class="text-muted">Gestion des stocks intégrée</small>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="card border-warning">
-                                                    <div class="card-body">
-                                                        <h6 class="card-title text-warning">Responsable</h6>
-                                                        <p class="card-text small">Gestion complète + Rapports</p>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                                        <div class="flex-shrink-0">
+                                                            <i class="fas fa-percentage fa-2x text-warning"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1 ms-3">
+                                                            <h6 class="mb-1">Système de Commissions</h6>
+                                                            <small class="text-muted">Motivation des employés</small>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="card border-danger">
-                                                    <div class="card-body">
-                                                        <h6 class="card-title text-danger">Patron</h6>
-                                                        <p class="card-text small">Accès total + Configuration</p>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                                        <div class="flex-shrink-0">
+                                                            <i class="fas fa-users fa-2x text-info"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1 ms-3">
+                                                            <h6 class="mb-1">Clients Fidèles</h6>
+                                                            <small class="text-muted">Système de réductions</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                                        <div class="flex-shrink-0">
+                                                            <i class="fas fa-chart-line fa-2x text-danger"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1 ms-3">
+                                                            <h6 class="mb-1">Rapports & Analyses</h6>
+                                                            <small class="text-muted">Données détaillées</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="d-flex align-items-center p-3 bg-light rounded">
+                                                        <div class="flex-shrink-0">
+                                                            <i class="fab fa-discord fa-2x" style="color: #7289da;"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1 ms-3">
+                                                            <h6 class="mb-1">Intégration Discord</h6>
+                                                            <small class="text-muted">Notifications en temps réel</small>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="card bg-light">
-                                            <div class="card-body text-center">
-                                                <i class="fas fa-code fa-3x text-muted mb-3"></i>
-                                                <h6 class="text-muted">Informations techniques</h6>
-                                                <table class="table table-sm table-borderless">
+                                </div>
+                                
+                                <!-- Informations techniques -->
+                                <div class="col-md-4 mb-4">
+                                    <div class="card border-0 shadow-sm h-100">
+                                        <div class="card-header" style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%); color: white;">
+                                            <h5 class="mb-0"><i class="fas fa-code me-2"></i>Informations Techniques</h5>
+                                        </div>
+                                        <div class="card-body p-4 text-center">
+                                            <i class="fas fa-server fa-3x text-muted mb-4"></i>
+                                            <div class="table-responsive">
+                                                <table class="table table-borderless">
                                                     <tr>
-                                                        <td><strong>Version :</strong></td>
-                                                        <td>1.0.0</td>
+                                                        <td class="text-start"><strong>Version :</strong></td>
+                                                        <td class="text-end"><span class="badge bg-primary">1.0.0</span></td>
                                                     </tr>
                                                     <tr>
-                                                        <td><strong>Framework :</strong></td>
-                                                        <td>PHP 8+ / MySQL</td>
+                                                        <td class="text-start"><strong>Framework :</strong></td>
+                                                        <td class="text-end"><span class="badge bg-info">PHP 8+ / MySQL</span></td>
                                                     </tr>
                                                     <tr>
-                                                        <td><strong>Interface :</strong></td>
-                                                        <td>Bootstrap 5</td>
+                                                        <td class="text-start"><strong>Interface :</strong></td>
+                                                        <td class="text-end"><span class="badge bg-success">Bootstrap 5</span></td>
                                                     </tr>
                                                     <tr>
-                                                        <td><strong>Sécurité :</strong></td>
-                                                        <td>CSRF Protection</td>
+                                                        <td class="text-start"><strong>Sécurité :</strong></td>
+                                                        <td class="text-end"><span class="badge bg-warning text-dark">CSRF Protection</span></td>
                                                     </tr>
                                                 </table>
-                                                
-                                                <div class="mt-3">
-                                                    <a href="../index.php" class="btn btn-outline-primary btn-sm" target="_blank">
+                                            </div>
+                                            <div class="mt-4">
+                                                <a href="../index.php" class="btn btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-external-link-alt me-2"></i>Site vitrine
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                        
+                                <!-- Rôles disponibles -->
+                                <div class="col-12 mb-4">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header" style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); color: white;">
+                                            <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>Rôles Disponibles</h5>
+                                        </div>
+                                        <div class="card-body p-4">
+                                            <div class="row g-4">
+                                                <div class="col-md-3">
+                                                    <div class="card border-0 h-100" style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); color: white;">
+                                                        <div class="card-body text-center p-4">
+                                                            <i class="fas fa-user-clock fa-3x mb-3"></i>
+                                                            <h5 class="card-title">CDD</h5>
+                                                            <p class="card-text">Accès aux ménages uniquement</p>
+                                                            <div class="mt-3">
+                                                                <span class="badge bg-light text-dark">Niveau 1</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="card border-0 h-100" style="background: linear-gradient(135deg, #00b894 0%, #00a085 100%); color: white;">
+                                                        <div class="card-body text-center p-4">
+                                                            <i class="fas fa-user-check fa-3x mb-3"></i>
+                                                            <h5 class="card-title">CDI</h5>
+                                                            <p class="card-text">Ménages + Caisse enregistreuse</p>
+                                                            <div class="mt-3">
+                                                                <span class="badge bg-light text-dark">Niveau 2</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="card border-0 h-100" style="background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%); color: white;">
+                                                        <div class="card-body text-center p-4">
+                                                            <i class="fas fa-user-cog fa-3x mb-3"></i>
+                                                            <h5 class="card-title">Responsable</h5>
+                                                            <p class="card-text">Gestion complète + Rapports</p>
+                                                            <div class="mt-3">
+                                                                <span class="badge bg-light text-dark">Niveau 3</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="card border-0 h-100" style="background: linear-gradient(135deg, #e17055 0%, #d63031 100%); color: white;">
+                                                        <div class="card-body text-center p-4">
+                                                            <i class="fas fa-user-tie fa-3x mb-3"></i>
+                                                            <h5 class="card-title">Patron</h5>
+                                                            <p class="card-text">Accès total + Configuration</p>
+                                                            <div class="mt-3">
+                                                                <span class="badge bg-light text-dark">Niveau 4</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                                                         <i class="fas fa-external-link-alt me-1"></i>
                                                         Site vitrine
                                                     </a>
