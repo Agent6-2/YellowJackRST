@@ -239,10 +239,15 @@ function calculateWeekStats($week_id) {
                     $stmt->execute([$week_id]);
                     $cleaning_result = $stmt->fetch();
                     
-                    // Calculer le CA des ménages : 60$ par ménage
+                    // Calculer le CA des ménages : taux configuré par ménage
+                    // Récupérer le taux de ménage depuis les paramètres
+                    $stmt_cleaning_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cleaning_rate'");
+                    $stmt_cleaning_rate->execute();
+                    $cleaning_rate = floatval($stmt_cleaning_rate->fetchColumn() ?: 60);
+                    
                     $cleaning_stats = [
                         'total_cleaning_count' => $cleaning_result['total_cleaning_count'] ?? 0,
-                        'total_cleaning_revenue' => ($cleaning_result['total_cleaning_count'] ?? 0) * 60
+                        'total_cleaning_revenue' => ($cleaning_result['total_cleaning_count'] ?? 0) * $cleaning_rate
                     ];
                 }
             }

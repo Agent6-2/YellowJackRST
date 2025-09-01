@@ -91,7 +91,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $user_cleaning_percentage = floatval($stmt_rate->fetchColumn() ?: 25); // 25% par défaut
                     
                     // Calculer le salaire de l'employé (pourcentage du revenu de l'entreprise)
-                    $company_revenue_per_cleaning = 60; // Chaque ménage rapporte 60$ à l'entreprise
+                    // Récupérer le taux de ménage depuis les paramètres
+                    $stmt_cleaning_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cleaning_rate'");
+                    $stmt_cleaning_rate->execute();
+                    $company_revenue_per_cleaning = floatval($stmt_cleaning_rate->fetchColumn() ?: 60);
                     $total_company_revenue = $cleaning_count * $company_revenue_per_cleaning;
                     $total_salary = ($total_company_revenue * $user_cleaning_percentage) / 100;
                     $current_time = date('Y-m-d H:i:s');

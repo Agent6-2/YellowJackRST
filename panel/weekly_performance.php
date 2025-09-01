@@ -136,8 +136,11 @@ if ($_POST && isset($_POST['calculate_performance'])) {
                 $stmt_rate->execute([$cleaning_rate_setting_key]);
                 $cleaning_percentage = floatval($stmt_rate->fetchColumn() ?: 25); // Pourcentage par défaut
                 
-                // Calculer la prime basée sur le nouveau système (pourcentage de 60$ par ménage)
-                $company_revenue_per_cleaning = 60;
+                // Calculer la prime basée sur le nouveau système (pourcentage du taux de ménage configuré)
+                // Récupérer le taux de ménage depuis les paramètres
+                $stmt_cleaning_rate = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = 'cleaning_rate'");
+                $stmt_cleaning_rate->execute();
+                $company_revenue_per_cleaning = floatval($stmt_cleaning_rate->fetchColumn() ?: 60);
                 $total_company_revenue = $cleaning_stats['total_menages'] * $company_revenue_per_cleaning;
                 $prime_percentage = $cleaning_percentage / 100; // Convertir en décimal
                 

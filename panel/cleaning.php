@@ -115,8 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $duration_data = calculateDuration($current_session['start_time'], $end_time);
                             $duration = $duration_data['total_minutes'];
                             
-                            // Chaque ménage rapporte 60$ à l'entreprise
-                            $company_revenue_per_cleaning = 60;
+                            // Utiliser le taux de ménage depuis les paramètres
+                            $company_revenue_per_cleaning = CLEANING_RATE;
                             $total_company_revenue = $cleaning_count * $company_revenue_per_cleaning;
                             
                             // Récupérer le pourcentage de commission selon le rôle depuis les paramètres
@@ -450,8 +450,8 @@ $page_title = 'Gestion des Ménages';
                             <label for="cleaning_count" class="form-label">Nombre de ménages effectués</label>
                             <input type="number" class="form-control" id="cleaning_count" name="cleaning_count" min="0" required>
                             <div class="form-text">
-                                Commission: <?php echo $user_cleaning_percentage; ?>% sur 60$ par ménage (<?php echo $user['role']; ?>)
-                                <br><small class="text-muted">Salaire par ménage: <?php echo number_format((60 * $user_cleaning_percentage) / 100, 2); ?>$</small>
+                                Commission: <?php echo $user_cleaning_percentage; ?>% sur <?php echo CLEANING_RATE; ?>$ par ménage (<?php echo $user['role']; ?>)
+                                <br><small class="text-muted">Salaire par ménage: <?php echo number_format((CLEANING_RATE * $user_cleaning_percentage) / 100, 2); ?>$</small>
                             </div>
                         </div>
                         
@@ -498,7 +498,7 @@ $page_title = 'Gestion des Ménages';
         document.getElementById('cleaning_count').addEventListener('input', function() {
             const count = parseInt(this.value) || 0;
             const percentage = <?php echo $user_cleaning_percentage; ?>;
-            const revenuePerCleaning = 60;
+            const revenuePerCleaning = <?php echo CLEANING_RATE; ?>;
             const salaryPerCleaning = (revenuePerCleaning * percentage) / 100;
             const salary = count * salaryPerCleaning;
             
