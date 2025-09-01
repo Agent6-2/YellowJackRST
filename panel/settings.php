@@ -426,6 +426,8 @@ $page_title = 'Configuration et Paramètres';
     <link href="../assets/css/panel.css" rel="stylesheet">
     <!-- Tabs Fix CSS -->
     <link href="../assets/css/tabs-fix.css?v=<?php echo time(); ?>" rel="stylesheet">
+    <!-- Tabs Override CSS - Correction finale -->
+    <link href="../assets/css/tabs-override.css?v=<?php echo time(); ?>" rel="stylesheet">
 </head>
 <body>
     <?php include 'includes/header.php'; ?>
