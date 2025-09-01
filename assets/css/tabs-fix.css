@@ -1,80 +1,30 @@
 /**
- * CORRECTION FORCÉE DU DÉCALAGE DES ONGLETS - VERSION ULTRA-SPÉCIFIQUE
- * Styles avec spécificité maximale pour surcharger tous les autres CSS
+ * CORRECTION ALIGNEMENT ONGLETS - UTILISATION DES DÉCALAGES NATURELS
+ * Correction ciblée utilisant l'alignement Bootstrap par défaut
  */
 
 /* CACHE BUSTER - Forcer le rechargement */
-/* Version: 2.0 - <?php echo time(); ?> */
+/* Version: 4.0 - Alignement naturel */
 
-/* CORRECTION FORCÉE AVEC SPÉCIFICITÉ MAXIMALE */
-body main .container-fluid .nav-tabs,
-body main div .nav-tabs,
-body .nav-tabs#settingsTabs,
-#settingsTabs.nav-tabs,
-ul.nav-tabs#settingsTabs {
-    border-bottom: 2px solid #dee2e6 !important;
-    margin-bottom: 0 !important;
-    margin-top: 20px !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    padding: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    list-style: none !important;
-    border-collapse: separate !important;
-    position: relative !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: 0 !important;
-    transform: none !important;
-    translate: none !important;
-    width: 100% !important;
-    max-width: none !important;
+/* Styles de base pour les onglets - utilise l'alignement Bootstrap naturel */
+.nav-tabs {
+    margin-top: 20px;
+    border-bottom: 1px solid #dee2e6;
 }
 
-body main .container-fluid .nav-tabs .nav-item,
-body main div .nav-tabs .nav-item,
-body .nav-tabs#settingsTabs .nav-item,
-#settingsTabs.nav-tabs .nav-item,
-ul.nav-tabs#settingsTabs .nav-item {
-    margin-bottom: -2px !important;
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-    margin-top: 0 !important;
-    display: block !important;
-    float: none !important;
-    position: relative !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: 0 !important;
-    transform: none !important;
-    translate: none !important;
+.nav-tabs .nav-item {
+    margin-bottom: -1px;
 }
 
-body main .container-fluid .nav-tabs .nav-link,
-body main div .nav-tabs .nav-link,
-body .nav-tabs#settingsTabs .nav-link,
-#settingsTabs.nav-tabs .nav-link,
-ul.nav-tabs#settingsTabs .nav-link {
-    border: 1px solid transparent !important;
-    border-top-left-radius: 0.375rem !important;
-    border-top-right-radius: 0.375rem !important;
-    padding: 0.75rem 1rem !important;
-    margin: 0 !important;
-    color: #495057 !important;
-    background-color: transparent !important;
-    transition: all 0.15s ease-in-out !important;
-    display: block !important;
-    text-decoration: none !important;
-    position: relative !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: 0 !important;
-    transform: none !important;
-    translate: none !important;
-    width: auto !important;
+.nav-tabs .nav-link {
+    border: 1px solid transparent;
+    border-top-left-radius: 0.375rem;
+    border-top-right-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    color: #495057;
+    background-color: transparent;
+    transition: all 0.15s ease-in-out;
+    text-decoration: none;
 }
 
 .nav-tabs .nav-link:hover {
@@ -91,59 +41,56 @@ ul.nav-tabs#settingsTabs .nav-link {
     font-weight: 600;
 }
 
-/* CORRECTION FORCÉE DU CONTENU DES ONGLETS */
+/* Contenu des onglets */
 .tab-content {
-    border: 1px solid #dee2e6 !important;
-    border-top: none !important;
-    background-color: #fff !important;
-    border-bottom-left-radius: 0.375rem !important;
-    border-bottom-right-radius: 0.375rem !important;
-    margin-top: 0 !important;
-    padding: 0 !important;
-    position: relative !important;
-    clear: both !important;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    background-color: #fff;
+    border-bottom-left-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
 }
 
 .tab-pane {
-    padding: 0 !important;
-    margin: 0 !important;
-    display: none !important;
+    display: none;
 }
 
 .tab-pane.active {
-    display: block !important;
+    display: block;
 }
 
 .tab-pane .card {
-    border: none !important;
-    border-radius: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    box-shadow: none !important;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .tab-pane .card:first-child {
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
 }
 
 .tab-pane .card:last-child {
-    border-bottom-left-radius: 0.375rem !important;
-    border-bottom-right-radius: 0.375rem !important;
+    border-bottom-left-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
 }
 
-/* Correction spécifique pour les onglets problématiques */
-#system .card,
-#commissions .card,
-#vitrine .card,
-#about .card {
-    box-shadow: none;
-    border: none;
-}
-
-/* Amélioration de l'espacement */
 .tab-pane .card-body {
     padding: 1.5rem;
+}
+
+/* Correction des icônes dans les onglets */
+.nav-tabs .nav-link i {
+    margin-right: 0.5rem;
+}
+
+/* Animation douce pour le changement d'onglets */
+.tab-pane {
+    opacity: 0;
+    transition: opacity 0.15s linear;
+}
+
+.tab-pane.active {
+    opacity: 1;
 }
 
 /* Responsive pour les onglets */
@@ -160,145 +107,4 @@ ul.nav-tabs#settingsTabs .nav-link {
     .tab-content {
         margin-top: 1rem;
     }
-}
-
-/* Correction des icônes dans les onglets */
-.nav-tabs .nav-link i {
-    margin-right: 0.5rem;
-    width: auto;
-}
-
-/* Animation douce pour le changement d'onglets */
-.tab-pane {
-    opacity: 0;
-    transition: opacity 0.15s linear;
-}
-
-.tab-pane.active {
-    opacity: 1;
-}
-
-/* CORRECTION COMPLÈTE DU Z-INDEX ET ALIGNEMENT */
-.nav-tabs .nav-item {
-    z-index: 1 !important;
-    float: none !important;
-    position: relative !important;
-}
-
-.nav-tabs .nav-item.show .nav-link,
-.nav-tabs .nav-link.active {
-    z-index: 3 !important;
-}
-
-.nav-tabs .nav-link:hover {
-    z-index: 2 !important;
-}
-
-/* ÉLIMINATION COMPLÈTE DU DÉCALAGE */
-#settingsTabs {
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    background: none !important;
-    box-shadow: none !important;
-    transform: none !important;
-    position: relative !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-}
-
-#settingsTabsContent {
-    margin: 0 !important;
-    padding: 0 !important;
-    transform: none !important;
-    position: relative !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-}
-
-/* RESET COMPLET POUR ÉVITER LES CONFLITS */
-.nav-tabs, .nav-tabs * {
-    box-sizing: border-box !important;
-}
-
-.tab-content, .tab-content * {
-    box-sizing: border-box !important;
-}
-
-/* CORRECTION DES MARGES ET PADDINGS PARASITES */
-body .nav-tabs {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-}
-
-body .tab-content {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-}
-
-/* CORRECTION ULTRA-SPÉCIFIQUE POUR ÉLIMINER TOUT DÉCALAGE */
-.container .nav-tabs,
-.container-fluid .nav-tabs,
-div .nav-tabs {
-    margin: 20px 0 0 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    transform: translateX(0) !important;
-    position: static !important;
-}
-
-.container .tab-content,
-.container-fluid .tab-content,
-div .tab-content {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    transform: translateX(0) !important;
-    position: static !important;
-}
-
-/* NEUTRALISATION DES STYLES BOOTSTRAP CONFLICTUELS */
-.nav-tabs .nav-item .nav-link {
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-    margin-top: 0 !important;
-    margin-bottom: -2px !important;
-    border-bottom-color: transparent !important;
-}
-
-.nav-tabs .nav-item:first-child .nav-link {
-    margin-left: 0 !important;
-}
-
-.nav-tabs .nav-item:last-child .nav-link {
-    margin-right: 0 !important;
-}
-
-/* CORRECTION DES OFFSETS ET TRANSFORMS */
-* .nav-tabs {
-    left: auto !important;
-    right: auto !important;
-    top: auto !important;
-    bottom: auto !important;
-    transform: none !important;
-    translate: none !important;
-}
-
-* .tab-content {
-    left: auto !important;
-    right: auto !important;
-    top: auto !important;
-    bottom: auto !important;
-    transform: none !important;
-    translate: none !important;
 }
