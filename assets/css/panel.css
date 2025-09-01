@@ -9,7 +9,7 @@
 /* Variables CSS */
 :root {
     --primary-color: #8B4513; /* Brun western */
-    --secondary-color: #DAA520; /* Or/Jaune */
+    --secondary-color: #B8860B; /* Or foncé pour meilleur contraste */
     --accent-color: #CD853F; /* Beige sable */
     --dark-color: #2F1B14; /* Brun foncé */
     --light-color: #F5DEB3; /* Beige clair */
@@ -20,7 +20,11 @@
     --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.15);
     --border-radius: 8px;
     --transition: all 0.3s ease;
-    --sidebar-width: 200px;
+    --sidebar-width: 250px;
+    --info-bg: #e3f2fd; /* Bleu clair pour les alertes info */
+    --info-text: #0d47a1; /* Bleu foncé pour le texte sur fond bleu clair */
+    --warning-bg: #fff3cd; /* Jaune clair pour les alertes warning */
+    --warning-text: #856404; /* Brun foncé pour le texte sur fond jaune */
 }
 
 /* Reset et base */
@@ -597,6 +601,94 @@ main {
 
 .border-primary {
     border-color: var(--primary-color) !important;
+}
+
+/* Amélioration des contrastes */
+.alert-info {
+    background-color: var(--info-bg) !important;
+    color: var(--info-text) !important;
+    border-color: #b3d9ff !important;
+}
+
+.alert-warning {
+    background-color: var(--warning-bg) !important;
+    color: var(--warning-text) !important;
+    border-color: #ffeaa7 !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-bg) !important;
+    color: var(--warning-text) !important;
+    border: 1px solid #ffeaa7;
+}
+
+/* Amélioration de la lisibilité du texte sur fond coloré */
+.card-header {
+    background: linear-gradient(45deg, var(--light-color), #ffffff) !important;
+    border-bottom: 2px solid var(--secondary-color) !important;
+    font-weight: 600 !important;
+    color: var(--text-dark) !important;
+}
+
+/* Amélioration de l'alignement et de la hiérarchie visuelle */
+.tab-content {
+    padding: 0 !important;
+}
+
+.tab-pane .card {
+    margin-bottom: 0 !important;
+}
+
+.tab-pane .card-body {
+    padding: 1.25rem !important;
+}
+
+.alert {
+    margin-bottom: 1rem !important;
+    padding: 0.75rem 1rem !important;
+}
+
+.form-group {
+    margin-bottom: 1rem !important;
+}
+
+.row {
+    margin-bottom: 1rem;
+}
+
+.row:last-child {
+    margin-bottom: 0;
+}
+
+/* Réduction des espaces vides excessifs */
+.container-fluid {
+    padding: 1rem !important;
+}
+
+main {
+    padding: 1.5rem !important;
+}
+
+.card + .card {
+    margin-top: 1rem;
+}
+
+/* Amélioration de l'alignement des éléments de formulaire */
+.form-label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-dark);
+}
+
+.form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
 }
 
 /* Loading spinner */
