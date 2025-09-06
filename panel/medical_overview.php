@@ -76,19 +76,28 @@ function getAvatarColor($role) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="../assets/css/panel.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #8B4513; /* Brun western */
+            --secondary-color: #B8860B; /* Or foncé */
+            --accent-color: #CD853F; /* Beige sable */
+            --dark-color: #2F1B14; /* Brun foncé */
+            --light-color: #F5DEB3; /* Beige clair */
+        }
+        
         .medical-card {
-            border: 1px solid #e0e0e0;
+            border: 2px solid var(--accent-color);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            background: #fff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #fff, var(--light-color));
+            box-shadow: 0 4px 12px rgba(139, 69, 19, 0.15);
             transition: all 0.3s ease;
         }
         
         .medical-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(139, 69, 19, 0.25);
+            border-color: var(--secondary-color);
         }
         
         .employee-avatar {
@@ -112,12 +121,12 @@ function getAvatarColor($role) {
         .employee-name {
             font-size: 18px;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--dark-color);
             margin-bottom: 5px;
         }
         
         .employee-role {
-            color: #7f8c8d;
+            color: var(--primary-color);
             font-size: 14px;
             margin-bottom: 10px;
         }
@@ -128,22 +137,24 @@ function getAvatarColor($role) {
         
         .medical-link {
             display: inline-block;
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background: linear-gradient(135deg, var(--secondary-color), #DAA520);
+            border: 1px solid var(--secondary-color);
             border-radius: 8px;
             padding: 8px 12px;
             margin: 5px 5px 5px 0;
             text-decoration: none;
-            color: #495057;
+            color: white;
             font-size: 14px;
+            font-weight: 500;
             transition: all 0.3s ease;
         }
         
         .medical-link:hover {
-            background: #e9ecef;
-            color: #495057;
+            background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+            color: var(--light-color);
             text-decoration: none;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(139, 69, 19, 0.3);
         }
         
         .medical-link i {
@@ -152,22 +163,36 @@ function getAvatarColor($role) {
         }
         
         .no-links {
-            color: #6c757d;
+            color: var(--primary-color);
             font-style: italic;
             font-size: 14px;
+            background: rgba(139, 69, 19, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border-left: 3px solid var(--secondary-color);
         }
         
         .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 12px;
+            background: linear-gradient(135deg, white, var(--light-color));
             padding: 20px;
-            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.15);
+            margin-bottom: 20px;
+            border: 2px solid var(--accent-color);
+            transition: all 0.3s ease;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.25);
         }
         
         .stats-number {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
         
         .page-header {
@@ -189,11 +214,11 @@ function getAvatarColor($role) {
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
                 <div class="page-header">
                     <div class="container">
-                        <h1 class="mb-0">
-                            <i class="fas fa-user-md me-3"></i>
-                            Visites Médicales
+                        <h1 class="mb-0 western-font" style="color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                            <i class="fas fa-file-medical me-3" style="color: var(--light-color);"></i>
+                            Visites Médicales - Le Yellowjack
                         </h1>
-                        <p class="mb-0 mt-2">Vue d'ensemble des documents médicaux de tous les employés</p>
+                        <p class="mb-0 mt-2" style="color: var(--light-color); font-weight: 500;">Vue d'ensemble des documents médicaux de tous les employés</p>
                     </div>
                 </div>
                 
