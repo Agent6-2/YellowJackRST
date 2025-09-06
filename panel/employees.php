@@ -484,15 +484,22 @@ $page_title = 'Gestion des Employés';
                                                         <button type="button" class="btn btn-outline-primary" 
                                                                 onclick="editEmployee(<?php echo htmlspecialchars(json_encode($employee)); ?>)" 
                                                                 data-bs-toggle="modal" 
-                                                                data-bs-target="#editEmployeeModal">
+                                                                data-bs-target="#editEmployeeModal"
+                                                                title="Modifier l'employé">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
+                                                        <a href="medical_links.php?employee_id=<?php echo $employee['id']; ?>" 
+                                                           class="btn btn-outline-success"
+                                                           title="Gérer les liens médicaux">
+                                                            <i class="fas fa-user-md"></i>
+                                                        </a>
                                                         <?php if ($employee['id'] !== $user['id']): ?>
                                                             <form method="POST" class="d-inline" onsubmit="return confirm('Confirmer le changement de statut ?')">
                                                                 <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
                                                                 <input type="hidden" name="action" value="toggle_status">
                                                                 <input type="hidden" name="employee_id" value="<?php echo $employee['id']; ?>">
-                                                                <button type="submit" class="btn btn-outline-<?php echo $employee['status'] === 'active' ? 'danger' : 'success'; ?>">
+                                                                <button type="submit" class="btn btn-outline-<?php echo $employee['status'] === 'active' ? 'danger' : 'success'; ?>"
+                                                                        title="<?php echo $employee['status'] === 'active' ? 'Désactiver' : 'Activer'; ?> l'employé">
                                                                     <i class="fas fa-<?php echo $employee['status'] === 'active' ? 'user-slash' : 'user-check'; ?>"></i>
                                                                 </button>
                                                             </form>
