@@ -102,6 +102,14 @@ $current_page = basename($_SERVER['PHP_SELF']);
                     Employés
                 </a>
             </li>
+            <?php if ($auth->hasPermission('Patron')): ?>
+            <li class="nav-item">
+                <a class="nav-link <?php echo $current_page === 'medical_overview.php' ? 'active' : ''; ?>" href="medical_overview.php">
+                    <i class="fas fa-user-md"></i>
+                    Visites Médicales
+                </a>
+            </li>
+            <?php endif; ?>
             <li class="nav-item">
                 <a class="nav-link <?php echo $current_page === 'inventory.php' ? 'active' : ''; ?>" href="inventory.php">
                     <i class="fas fa-boxes"></i>
