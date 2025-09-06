@@ -38,7 +38,7 @@ try {
             ) as medical_links
         FROM users u
         LEFT JOIN employee_medical_links eml ON u.id = eml.user_id AND eml.is_active = 1
-        WHERE u.role IN ('CDD', 'CDI', 'Responsable')
+        WHERE u.role IN ('CDD', 'CDI', 'Responsable', 'Patron')
         GROUP BY u.id
         ORDER BY u.last_name, u.first_name
     ");
