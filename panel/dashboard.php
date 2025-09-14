@@ -83,9 +83,9 @@ try {
         ];
     }
     
-    // Statistiques des ventes si CDI ou plus (semaine active)
-    if ($auth->canAccessCashRegister()) {
-        try {
+    // Statistiques des ventes pour tous les utilisateurs (pour voir les commissions)
+    // Note: Seuls les CDI+ peuvent accéder à la caisse, mais tous peuvent voir leurs commissions
+    try {
             // Vérifier si la table sales existe et a la colonne week_id
             $check_table = $db->query("SHOW TABLES LIKE 'sales'");
             if ($check_table->rowCount() > 0) {
@@ -131,14 +131,13 @@ try {
                     'commissions_total' => 0
                 ];
             }
-        } catch (PDOException $e) {
-            error_log('Erreur statistiques ventes dashboard : ' . $e->getMessage());
-            $stats['sales'] = [
-                'total_ventes' => 0,
-                'ca_total' => 0,
-                'commissions_total' => 0
-            ];
-        }
+    } catch (PDOException $e) {
+        error_log('Erreur statistiques ventes dashboard : ' . $e->getMessage());
+        $stats['sales'] = [
+            'total_ventes' => 0,
+            'ca_total' => 0,
+            'commissions_total' => 0
+        ];
     }
     
     // Statistiques globales pour les responsables/patrons
@@ -333,7 +332,7 @@ try {
                         </div>
                     </div>
                     
-                    <!-- Statistiques ventes (CDI+) -->
+                    <!-- Statistiques ventes (CDI+ seulement) -->
                     <?php if ($auth->canAccessCashRegister() && isset($stats['sales'])): ?>
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-0 shadow-sm h-100">
@@ -357,7 +356,10 @@ try {
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
                     
+                    <!-- Commissions (tous les utilisateurs) -->
+                    <?php if (isset($stats['sales'])): ?>
                     <div class="col-xl-3 col-md-6 mb-4">
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-body">
