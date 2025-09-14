@@ -43,8 +43,8 @@ if ($_POST && isset($_POST['update_goals'])) {
     }
 }
 
-// Période par défaut (semaine active)
-$period = $_GET['period'] ?? 'active_week';
+// Période par défaut (semaine spécifique)
+$period = $_GET['period'] ?? 'specific_week';
 $start_date = '';
 $end_date = '';
 $period_label = '';
@@ -98,22 +98,7 @@ switch ($period) {
         $end_date = date('Y-m-d', strtotime('sunday this week'));
         $period_label = "Cette semaine";
         break;
-    case 'month':
-        $start_date = date('Y-m-01');
-        $end_date = date('Y-m-t');
-        $period_label = "Ce mois";
-        break;
-    case 'quarter':
-        $quarter = ceil(date('n') / 3);
-        $start_date = date('Y-' . sprintf('%02d', ($quarter - 1) * 3 + 1) . '-01');
-        $end_date = date('Y-m-t', strtotime($start_date . ' +2 months'));
-        $period_label = "Ce trimestre";
-        break;
-    case 'year':
-        $start_date = date('Y-01-01');
-        $end_date = date('Y-12-31');
-        $period_label = "Cette année";
-        break;
+
     case 'custom':
         $start_date = $_GET['start_date'] ?? date('Y-m-01');
         $end_date = $_GET['end_date'] ?? date('Y-m-d');
@@ -388,9 +373,7 @@ $page_title = "Mes Statistiques";
                                     <option value="today" <?php echo $period === 'today' ? 'selected' : ''; ?>>Aujourd'hui</option>
                                     <option value="active_week" <?php echo $period === 'active_week' ? 'selected' : ''; ?>>Semaine active</option>
                                     <option value="week" <?php echo $period === 'week' ? 'selected' : ''; ?>>Cette semaine</option>
-                                    <option value="month" <?php echo $period === 'month' ? 'selected' : ''; ?>>Ce mois</option>
-                                    <option value="quarter" <?php echo $period === 'quarter' ? 'selected' : ''; ?>>Ce trimestre</option>
-                                    <option value="year" <?php echo $period === 'year' ? 'selected' : ''; ?>>Cette année</option>
+                                    <option value="specific_week" <?php echo $period === 'specific_week' ? 'selected' : ''; ?>>Semaine spécifique</option>
                                     <option value="custom" <?php echo $period === 'custom' ? 'selected' : ''; ?>>Période personnalisée</option>
                                 </select>
                             </div>
