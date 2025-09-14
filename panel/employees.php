@@ -128,6 +128,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Erreur lors de la modification du statut.';
                 }
                 break;
+                
+            case 'fire_employee':
+                $employee_id = intval($_POST['employee_id']);
+                try {
+                    // Ne pas permettre de licencier son propre compte
+                    if ($employee_id === $user['id']) {
+                        $error = 'Vous ne pouvez pas vous licencier vous-même.';
+                    } else {
+                        $stmt = $db->prepare("UPDATE users SET status = 'fired' WHERE id = ?");
+                        $stmt->execute([$employee_id]);
+                        $message = 'Employé licencié avec succès !';
+                    }
+                } catch (Exception $e) {
+                    $error = 'Erreur lors du licenciement de l\'employé.';
+                }
+                break;
+                
+            case 'rehire_employee':
+                $employee_id = intval($_POST['employee_id']);
+                try {
+                    $stmt = $db->prepare("UPDATE users SET status = 'active' WHERE id = ?");
+                    $stmt->execute([$employee_id]);
+                    $message = 'Employé réembauché avec succès !';
+                } catch (Exception $e) {
+                    $error = 'Erreur lors du réembauchage de l\'employé.';
+                }
+                break;
         }
     }
 }
@@ -140,8 +167,8 @@ $page = max(1, intval($_GET['page'] ?? 1));
 $limit = 20;
 $offset = ($page - 1) * $limit;
 
-// Construction de la requête
-$where_conditions = [];
+// Construction de la requête (exclure les licenciés de la liste principale)
+$where_conditions = ["u.status != 'fired'"];
 $params = [];
 
 if ($search) {
@@ -160,15 +187,15 @@ if ($role_filter) {
 }
 
 if ($status_filter === 'active') {
-    $where_conditions[] = "status = 'active'";
+    $where_conditions[] = "u.status = 'active'";
 } elseif ($status_filter === 'inactive') {
-    $where_conditions[] = "status = 'suspended'";
+    $where_conditions[] = "u.status = 'suspended'";
 }
 
 $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
 
 // Compter le total
-$count_query = "SELECT COUNT(*) FROM users $where_clause";
+$count_query = "SELECT COUNT(*) FROM users u $where_clause";
 $stmt = $db->prepare($count_query);
 $stmt->execute($params);
 $total_records = $stmt->fetchColumn();
@@ -199,12 +226,13 @@ $employees = $stmt->fetchAll();
 $stats_query = "
     SELECT 
         COUNT(*) as total_employees,
-        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_employees,
-        SUM(CASE WHEN role = 'CDD' THEN 1 ELSE 0 END) as cdd_count,
-        SUM(CASE WHEN role = 'CDI' THEN 1 ELSE 0 END) as cdi_count,
-        SUM(CASE WHEN role = 'Responsable' THEN 1 ELSE 0 END) as responsable_count,
-        SUM(CASE WHEN role = 'Patron' THEN 1 ELSE 0 END) as patron_count
-    FROM users
+        SUM(CASE WHEN u.status = 'active' THEN 1 ELSE 0 END) as active_employees,
+        SUM(CASE WHEN u.status = 'fired' THEN 1 ELSE 0 END) as fired_employees,
+        SUM(CASE WHEN u.role = 'CDD' THEN 1 ELSE 0 END) as cdd_count,
+        SUM(CASE WHEN u.role = 'CDI' THEN 1 ELSE 0 END) as cdi_count,
+        SUM(CASE WHEN u.role = 'Responsable' THEN 1 ELSE 0 END) as responsable_count,
+        SUM(CASE WHEN u.role = 'Patron' THEN 1 ELSE 0 END) as patron_count
+    FROM users u
 ";
 $stmt = $db->prepare($stats_query);
 $stmt->execute();
@@ -294,7 +322,16 @@ $page_title = 'Gestion des Employés';
                     <div class="col-md-2">
                         <div class="card text-center">
                             <div class="card-body">
-                                <i class="fas fa-user-clock fa-2x text-warning mb-2"></i>
+                                <i class="fas fa-user-times fa-2x text-warning mb-2"></i>
+                                <h5 class="card-title"><?php echo number_format($stats['fired_employees']); ?></h5>
+                                <p class="card-text text-muted">Licenciés</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-user-clock fa-2x text-info mb-2"></i>
                                 <h5 class="card-title"><?php echo number_format($stats['cdd_count']); ?></h5>
                                 <p class="card-text text-muted">CDD</p>
                             </div>
@@ -449,6 +486,11 @@ $page_title = 'Gestion des Employés';
                                                             <i class="fas fa-check me-1"></i>
                                                             Actif
                                                         </span>
+                                                    <?php elseif ($employee['status'] === 'fired'): ?>
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-user-times me-1"></i>
+                                                            Licencié
+                                                        </span>
                                                     <?php else: ?>
                                                         <span class="badge bg-danger">
                                                             <i class="fas fa-times me-1"></i>
@@ -494,15 +536,36 @@ $page_title = 'Gestion des Employés';
                                                             <i class="fas fa-user-md"></i>
                                                         </a>
                                                         <?php if ($employee['id'] !== $user['id']): ?>
-                                                            <form method="POST" class="d-inline" onsubmit="return confirm('Confirmer le changement de statut ?')">
-                                                                <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
-                                                                <input type="hidden" name="action" value="toggle_status">
-                                                                <input type="hidden" name="employee_id" value="<?php echo $employee['id']; ?>">
-                                                                <button type="submit" class="btn btn-outline-<?php echo $employee['status'] === 'active' ? 'danger' : 'success'; ?>"
-                                                                        title="<?php echo $employee['status'] === 'active' ? 'Désactiver' : 'Activer'; ?> l'employé">
-                                                                    <i class="fas fa-<?php echo $employee['status'] === 'active' ? 'user-slash' : 'user-check'; ?>"></i>
-                                                                </button>
-                                                            </form>
+                                                            <?php if ($employee['status'] !== 'fired'): ?>
+                                                                <form method="POST" class="d-inline" onsubmit="return confirm('Confirmer le changement de statut ?')">
+                                                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                                    <input type="hidden" name="action" value="toggle_status">
+                                                                    <input type="hidden" name="employee_id" value="<?php echo $employee['id']; ?>">
+                                                                    <button type="submit" class="btn btn-outline-<?php echo $employee['status'] === 'active' ? 'danger' : 'success'; ?>"
+                                                                            title="<?php echo $employee['status'] === 'active' ? 'Désactiver' : 'Activer'; ?> l'employé">
+                                                                        <i class="fas fa-<?php echo $employee['status'] === 'active' ? 'user-slash' : 'user-check'; ?>"></i>
+                                                                    </button>
+                                                                </form>
+                                                                <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir licencier cet employé ? Cette action est définitive.')">
+                                                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                                    <input type="hidden" name="action" value="fire_employee">
+                                                                    <input type="hidden" name="employee_id" value="<?php echo $employee['id']; ?>">
+                                                                    <button type="submit" class="btn btn-outline-warning"
+                                                                            title="Licencier l'employé">
+                                                                        <i class="fas fa-user-times"></i>
+                                                                    </button>
+                                                                </form>
+                                                            <?php else: ?>
+                                                                <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir réembaucher cet employé ?')">
+                                                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                                    <input type="hidden" name="action" value="rehire_employee">
+                                                                    <input type="hidden" name="employee_id" value="<?php echo $employee['id']; ?>">
+                                                                    <button type="submit" class="btn btn-outline-success"
+                                                                            title="Réembaucher l'employé">
+                                                                        <i class="fas fa-user-plus"></i>
+                                                                    </button>
+                                                                </form>
+                                                            <?php endif; ?>
                                                         <?php endif; ?>
                                                     </div>
                                                 </td>
@@ -553,6 +616,78 @@ $page_title = 'Gestion des Employés';
                                 </button>
                             </div>
                         <?php endif; ?>
+                    </div>
+                </div>
+                
+                <!-- Section des employés licenciés -->
+                <?php
+                // Récupérer les employés licenciés
+                $fired_query = "SELECT u.* FROM users u WHERE u.status = 'fired' ORDER BY u.first_name, u.last_name";
+                $fired_stmt = $db->prepare($fired_query);
+                $fired_stmt->execute();
+                $fired_employees = $fired_stmt->fetchAll();
+                ?>
+                
+                <?php if (!empty($fired_employees)): ?>
+                <div class="card mt-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-times me-2"></i>
+                            Employés Licenciés (<?php echo count($fired_employees); ?>)
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Employé</th>
+                                        <th>Rôle</th>
+                                        <th>Date d'inscription</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($fired_employees as $employee): ?>
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3">
+                                                        <i class="fas fa-user text-white"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0"><?php echo htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']); ?></h6>
+                                                        <small class="text-muted">@<?php echo htmlspecialchars($employee['username']); ?></small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary"><?php echo htmlspecialchars($employee['role']); ?></span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    <?php echo date('d/m/Y', strtotime($employee['created_at'])); ?>
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir réembaucher cet employé ?')">
+                                                    <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
+                                                    <input type="hidden" name="action" value="rehire_employee">
+                                                    <input type="hidden" name="employee_id" value="<?php echo $employee['id']; ?>">
+                                                    <button type="submit" class="btn btn-success btn-sm" title="Réembaucher l'employé">
+                                                        <i class="fas fa-user-plus me-1"></i>
+                                                        Réembaucher
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                     </div>
                 </div>
             </main>
