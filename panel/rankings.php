@@ -87,33 +87,45 @@ try {
     $cleaning_rankings = [];
 }
 
-// Classement des ventes (si l'utilisateur peut voir)
+// Classement des ventes (CDI+ seulement) et commissions (tous les utilisateurs)
 $sales_rankings = [];
+$commission_rankings = [];
+
+// Commissions visibles pour tous
+try {
+    $stmt = $db->prepare("
+        SELECT 
+            u.id,
+            u.first_name,
+            u.last_name,
+            u.role,
+            COUNT(s.id) as total_ventes,
+            SUM(s.final_amount) as ca_total,
+            SUM(s.employee_commission) as commissions_total,
+            AVG(s.final_amount) as panier_moyen,
+            SUM(CASE WHEN s.customer_id IS NOT NULL THEN 1 ELSE 0 END) as ventes_clients_fideles
+        FROM users u
+        LEFT JOIN sales s ON u.id = s.user_id 
+            AND DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+        WHERE u.status = 'active'
+        GROUP BY u.id, u.first_name, u.last_name, u.role
+        ORDER BY commissions_total DESC
+    ");
+    $stmt->execute([$start_date, $end_date]);
+    $commission_rankings = $stmt->fetchAll();
+} catch (Exception $e) {
+    $commission_rankings = [];
+}
+
+// Ventes visibles seulement pour CDI+
 if ($auth->canAccessCashRegister()) {
-    try {
-        $stmt = $db->prepare("
-            SELECT 
-                u.id,
-                u.first_name,
-                u.last_name,
-                u.role,
-                COUNT(s.id) as total_ventes,
-                SUM(s.final_amount) as ca_total,
-                SUM(s.employee_commission) as commissions_total,
-                AVG(s.final_amount) as panier_moyen,
-                SUM(CASE WHEN s.customer_id IS NOT NULL THEN 1 ELSE 0 END) as ventes_clients_fideles
-            FROM users u
-            LEFT JOIN sales s ON u.id = s.user_id 
-                AND DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
-            WHERE u.status = 'active'
-            GROUP BY u.id, u.first_name, u.last_name, u.role
-            ORDER BY total_ventes DESC, ca_total DESC
-        ");
-        $stmt->execute([$start_date, $end_date]);
-        $sales_rankings = $stmt->fetchAll();
-    } catch (Exception $e) {
-        $sales_rankings = [];
-    }
+    $sales_rankings = $commission_rankings; // Réutiliser les mêmes données mais triées par ventes
+    usort($sales_rankings, function($a, $b) {
+        if ($b['total_ventes'] == $a['total_ventes']) {
+            return $b['ca_total'] <=> $a['ca_total'];
+        }
+        return $b['total_ventes'] <=> $a['total_ventes'];
+    });
 }
 
 // Statistiques globales
@@ -132,19 +144,25 @@ try {
     $stmt->execute([$start_date, $end_date]);
     $global_stats = $stmt->fetch();
     
+    // Commissions totales visibles pour tous
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(DISTINCT s.user_id) as employes_actifs_vente,
+            COUNT(s.id) as total_ventes_equipe,
+            SUM(s.final_amount) as ca_total_equipe,
+            SUM(s.employee_commission) as commissions_totales_equipe
+        FROM sales s
+        WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
+    ");
+    $stmt->execute([$start_date, $end_date]);
+    $sales_global = $stmt->fetch();
+    
+    // Ajouter les commissions pour tous, ventes seulement pour CDI+
     if ($auth->canAccessCashRegister()) {
-        $stmt = $db->prepare("
-            SELECT 
-                COUNT(DISTINCT s.user_id) as employes_actifs_vente,
-                COUNT(s.id) as total_ventes_equipe,
-                SUM(s.final_amount) as ca_total_equipe,
-                SUM(s.employee_commission) as commissions_totales_equipe
-            FROM sales s
-            WHERE DATE(s.created_at) >= ? AND DATE(s.created_at) <= ?
-        ");
-        $stmt->execute([$start_date, $end_date]);
-        $sales_global = $stmt->fetch();
         $global_stats = array_merge($global_stats, $sales_global);
+    } else {
+        // Pour les CDD, ajouter seulement les commissions
+        $global_stats['commissions_totales_equipe'] = $sales_global['commissions_totales_equipe'];
     }
 } catch (Exception $e) {
     $global_stats = [
@@ -271,6 +289,24 @@ try {
                         </div>
                     </div>
                 </div>
+                <!-- Commissions totales (tous les utilisateurs) -->
+                <?php if (isset($global_stats['commissions_totales_equipe'])): ?>
+                <div class="col-md-3">
+                    <div class="card text-white bg-success global-stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h4 class="card-title">$<?php echo number_format($global_stats['commissions_totales_equipe'] ?? 0, 2); ?></h4>
+                                    <p class="card-text">Commissions équipe</p>
+                                </div>
+                                <div class="align-self-center">
+                                    <i class="fas fa-percentage fa-2x"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 <?php if ($auth->canAccessCashRegister() && isset($global_stats['ca_total_equipe'])): ?>
                 <div class="col-md-3">
                     <div class="card text-white bg-warning global-stats-card">
@@ -349,6 +385,70 @@ try {
                                             <td>$<?php echo number_format($employee['salaire_moyen'], 2); ?></td>
                                             <td><?php echo $employee['total_hours']; ?>h</td>
                                             <td><?php echo $employee['duree_moyenne']; ?> min</td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Classement des commissions (tous les utilisateurs) -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-percentage"></i> Classement Commissions - <?php echo $period_label; ?></h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($commission_rankings)): ?>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Aucune donnée de commission pour cette période.
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover rankings-table">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Rang</th>
+                                        <th>Employé</th>
+                                        <th>Rôle</th>
+                                        <th>Commissions</th>
+                                        <th>Comm. Ménage</th>
+                                        <th>Comm. Vente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($commission_rankings as $index => $employee): ?>
+                                        <tr class="<?php echo $employee['id'] == $user['id'] ? 'table-warning' : ''; ?>">
+                                            <td>
+                                                <div class="ranking-position">
+                                                    <?php if ($index === 0): ?>
+                                                        <i class="fas fa-trophy"></i> 1
+                                                    <?php elseif ($index === 1): ?>
+                                                        <i class="fas fa-medal text-secondary"></i> 2
+                                                    <?php elseif ($index === 2): ?>
+                                                        <i class="fas fa-medal text-warning"></i> 3
+                                                    <?php else: ?>
+                                                        <?php echo $index + 1; ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="employee-info">
+                                                    <strong><?php echo htmlspecialchars($employee['prenom'] . ' ' . $employee['nom']); ?></strong>
+                                                    <?php if ($employee['id'] == $user['id']): ?>
+                                                        <span class="badge bg-primary ms-2">Vous</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-<?php echo $employee['role'] === 'CDI' ? 'success' : ($employee['role'] === 'CDD' ? 'warning' : 'secondary'); ?>">
+                                                    <?php echo htmlspecialchars($employee['role']); ?>
+                                                </span>
+                                            </td>
+                                            <td><strong>$<?php echo number_format($employee['commissions_total'], 2); ?></strong></td>
+                                            <td>$<?php echo number_format($employee['commissions_menage'] ?? 0, 2); ?></td>
+                                            <td>$<?php echo number_format($employee['commissions_vente'] ?? 0, 2); ?></td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>

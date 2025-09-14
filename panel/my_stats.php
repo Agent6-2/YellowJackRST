@@ -154,31 +154,29 @@ try {
     ];
 }
 
-// Statistiques de vente (si autorisé)
+// Statistiques de vente - commissions visibles pour tous, ventes pour CDI+ seulement
 $sales_stats = [];
-if ($auth->canAccessCashRegister()) {
-    try {
-        $stmt = $db->prepare("
-            SELECT 
-                COUNT(*) as total_ventes,
-                SUM(final_amount) as ca_total,
-                SUM(employee_commission) as commissions_total,
-                AVG(final_amount) as panier_moyen,
-                SUM(CASE WHEN customer_id IS NOT NULL THEN 1 ELSE 0 END) as ventes_clients_fideles
-            FROM sales 
-            WHERE user_id = ? AND DATE(created_at) >= ? AND DATE(created_at) <= ?
-        ");
-        $stmt->execute([$user['id'], $start_date, $end_date]);
-        $sales_stats = $stmt->fetch();
-    } catch (Exception $e) {
-        $sales_stats = [
-            'total_ventes' => 0,
-            'ca_total' => 0,
-            'commissions_total' => 0,
-            'panier_moyen' => 0,
-            'ventes_clients_fideles' => 0
-        ];
-    }
+try {
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as total_ventes,
+            SUM(final_amount) as ca_total,
+            SUM(employee_commission) as commissions_total,
+            AVG(final_amount) as panier_moyen,
+            SUM(CASE WHEN customer_id IS NOT NULL THEN 1 ELSE 0 END) as ventes_clients_fideles
+        FROM sales 
+        WHERE user_id = ? AND DATE(created_at) >= ? AND DATE(created_at) <= ?
+    ");
+    $stmt->execute([$user['id'], $start_date, $end_date]);
+    $sales_stats = $stmt->fetch();
+} catch (Exception $e) {
+    $sales_stats = [
+        'total_ventes' => 0,
+        'ca_total' => 0,
+        'commissions_total' => 0,
+        'panier_moyen' => 0,
+        'ventes_clients_fideles' => 0
+    ];
 }
 
 // Évolution des performances (derniers 7 jours)
@@ -205,8 +203,8 @@ try {
             'salaire' => $cleaning_day['salaire']
         ];
         
-        // Ventes du jour (si autorisé)
-        if ($auth->canAccessCashRegister()) {
+        // Commissions du jour (tous les utilisateurs)
+        try {
             $stmt = $db->prepare("
                 SELECT 
                     COALESCE(COUNT(*), 0) as ventes,
@@ -217,8 +215,17 @@ try {
             $stmt->execute([$user['id'], $date]);
             $sales_day = $stmt->fetch();
             
-            $day_data['ventes'] = $sales_day['ventes'];
+            // Ventes visibles seulement pour CDI+
+            if ($auth->canAccessCashRegister()) {
+                $day_data['ventes'] = $sales_day['ventes'];
+            }
+            // Commissions visibles pour tous
             $day_data['commissions'] = $sales_day['commissions'];
+        } catch (Exception $e) {
+            if ($auth->canAccessCashRegister()) {
+                $day_data['ventes'] = 0;
+            }
+            $day_data['commissions'] = 0;
         }
         
         $performance_data[] = $day_data;
@@ -279,10 +286,12 @@ if ($period === 'active_week' || $period === 'specific_week' || $period === 'wee
     $progress['menages'] = $cleaning_stats['total_menages'] > 0 ? min(100, ($cleaning_stats['total_menages'] / $objectifs['menages_hebdomadaire']) * 100) : 0;
     $progress['salaire'] = $cleaning_stats['total_salaire'] > 0 ? min(100, ($cleaning_stats['total_salaire'] / $objectifs['salaire_hebdomadaire']) * 100) : 0;
     
+    // Ventes visibles seulement pour CDI+
     if ($auth->canAccessCashRegister()) {
         $progress['ventes'] = $sales_stats['total_ventes'] > 0 ? min(100, ($sales_stats['total_ventes'] / $objectifs['ventes_hebdomadaires']) * 100) : 0;
-        $progress['commissions'] = $sales_stats['commissions_total'] > 0 ? min(100, ($sales_stats['commissions_total'] / $objectifs['commissions_hebdomadaires']) * 100) : 0;
     }
+    // Commissions visibles pour tous
+    $progress['commissions'] = $sales_stats['commissions_total'] > 0 ? min(100, ($sales_stats['commissions_total'] / $objectifs['commissions_hebdomadaires']) * 100) : 0;
     
     // Vérifier et notifier les objectifs atteints
     try {
@@ -297,14 +306,16 @@ if ($period === 'active_week' || $period === 'specific_week' || $period === 'wee
             notifyDiscordGoal($employee_name, 'Salaire hebdomadaire', $cleaning_stats['total_salaire']);
         }
         
+        // Notifications pour les ventes (CDI+ seulement)
         if ($auth->canAccessCashRegister()) {
             if ($progress['ventes'] >= 100 && $sales_stats['total_ventes'] >= $objectifs['ventes_hebdomadaires']) {
                 notifyDiscordGoal($employee_name, 'Ventes hebdomadaires', $sales_stats['total_ventes']);
             }
-            
-            if ($progress['commissions'] >= 100 && $sales_stats['commissions_total'] >= $objectifs['commissions_hebdomadaires']) {
-                notifyDiscordGoal($employee_name, 'Commissions hebdomadaires', $sales_stats['commissions_total']);
-            }
+        }
+        
+        // Notifications pour les commissions (tous les utilisateurs)
+        if ($progress['commissions'] >= 100 && $sales_stats['commissions_total'] >= $objectifs['commissions_hebdomadaires']) {
+            notifyDiscordGoal($employee_name, 'Commissions hebdomadaires', $sales_stats['commissions_total']);
         }
     } catch (Exception $e) {
         // Log l'erreur mais ne pas interrompre l'affichage
@@ -558,30 +569,33 @@ $page_title = "Mes Statistiques";
                             </div>
                             
                             <?php if ($auth->canAccessCashRegister()): ?>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between">
-                                        <span>Ventes</span>
-                                        <span><?php echo number_format($sales_stats['total_ventes']); ?> / <?php echo $objectifs['ventes_hebdomadaires']; ?></span>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-warning" style="width: <?php echo $progress['ventes']; ?>%"></div>
-                                    </div>
-                                    <small class="text-muted"><?php echo number_format($progress['ventes'], 1); ?>% de l'objectif hebdomadaire</small>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between">
-                                        <span>Commissions</span>
-                                        <span><?php echo number_format($sales_stats['commissions_total'], 2); ?>$ / <?php echo $objectifs['commissions_hebdomadaires']; ?>$</span>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-danger" style="width: <?php echo $progress['commissions']; ?>%"></div>
-                                    </div>
-                                    <small class="text-muted"><?php echo number_format($progress['commissions'], 1); ?>% de l'objectif hebdomadaire</small>
-                                </div>
-                            </div>
-                            <?php endif; ?>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Ventes</span>
+                        <span><?php echo number_format($sales_stats['total_ventes']); ?> / <?php echo $objectifs['ventes_hebdomadaires']; ?></span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" style="width: <?php echo $progress['ventes']; ?>%"></div>
+                    </div>
+                    <small class="text-muted"><?php echo number_format($progress['ventes'], 1); ?>% de l'objectif hebdomadaire</small>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Commissions (tous les utilisateurs) -->
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Commissions</span>
+                        <span><?php echo number_format($sales_stats['commissions_total'], 2); ?>$ / <?php echo $objectifs['commissions_hebdomadaires']; ?>$</span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-danger" style="width: <?php echo $progress['commissions']; ?>%"></div>
+                    </div>
+                    <small class="text-muted"><?php echo number_format($progress['commissions'], 1); ?>% de l'objectif hebdomadaire</small>
+                </div>
+            </div>
                         </div>
                     </div>
                 </div>
@@ -724,14 +738,14 @@ $page_title = "Mes Statistiques";
                 backgroundColor: 'rgba(255, 205, 86, 0.2)',
                 tension: 0.1,
                 yAxisID: 'y'
-            }, {
+            }<?php endif; ?>, {
                 label: 'Commissions ($)',
                 data: <?php echo json_encode(array_column($performance_data, 'commissions')); ?>,
                 borderColor: 'rgb(54, 162, 235)',
                 backgroundColor: 'rgba(54, 162, 235, 0.2)',
                 tension: 0.1,
                 yAxisID: 'y1'
-            }<?php endif; ?>]
+            }]
         },
         options: {
             responsive: true,
