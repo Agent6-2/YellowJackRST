@@ -433,6 +433,7 @@ $page_title = 'Gestion des Employés';
                                             <th>Rôle</th>
                                             <th>Contact</th>
                                             <th>Statut</th>
+                                            <th>Discord</th>
                                             <th>Ménages</th>
                                             <th>Ventes</th>
                                             <th>Gains</th>
@@ -455,6 +456,35 @@ $page_title = 'Gestion des Employés';
                                                             <?php endif; ?>
                                                         </div>
                                                     </div>
+                                                </td>
+                                                <td>
+                                                    <?php if ($employee['discord_id']): ?>
+                                                        <div class="text-center">
+                                                            <?php if ($employee['discord_present']): ?>
+                                                                <span class="badge bg-success" title="Présent sur Discord">
+                                                                    <i class="fab fa-discord me-1"></i>
+                                                                    En ligne
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="badge bg-danger" title="Absent de Discord">
+                                                                    <i class="fab fa-discord me-1"></i>
+                                                                    Hors ligne
+                                                                </span>
+                                                            <?php endif; ?>
+                                                            <?php if ($employee['discord_last_checked']): ?>
+                                                                <small class="d-block text-muted mt-1">
+                                                                    Vérifié: <?php echo formatDateTime($employee['discord_last_checked'], 'd/m H:i'); ?>
+                                                                </small>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    <?php else: ?>
+                                                        <div class="text-center">
+                                                            <span class="badge bg-secondary" title="ID Discord non configuré">
+                                                                <i class="fas fa-question me-1"></i>
+                                                                Non configuré
+                                                            </span>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </td>
                                                 <td>
                                                     <code><?php echo htmlspecialchars($employee['username']); ?></code>

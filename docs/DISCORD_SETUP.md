@@ -1,13 +1,14 @@
-# 🤖 Configuration Discord Webhook - Le Yellowjack
+# Configuration du Bot Discord - Le Yellowjack
 
-## 📋 Vue d'ensemble
+## 📋 Prérequis
 
-Le système de webhook Discord permet d'envoyer automatiquement des notifications dans votre serveur Discord pour :
-- ✅ Nouvelles ventes
-- 🎯 Objectifs atteints
-- ⚠️ Erreurs système
-- 📊 Résumés hebdomadaires
-- 🎉 Événements spéciaux
+1. **Compte Discord Développeur**
+   - Créer un compte sur [Discord Developer Portal](https://discord.com/developers/applications)
+   - Créer une nouvelle application Discord
+
+2. **Serveur Discord**
+   - Avoir les permissions d'administrateur sur le serveur
+   - Activer le mode développeur dans Discord
 
 ## 🚀 Configuration rapide
 
